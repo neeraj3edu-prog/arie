@@ -3,6 +3,53 @@ import { validateRequest, checkRateLimit, corsHeaders } from '../_shared/auth.ts
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const RATE_LIMIT = 20;
 
+// Generate a short-lived Google OAuth2 access token from a service account key.
+async function getGoogleAccessToken(serviceAccountJson: string): Promise<string> {
+  type ServiceAccount = { client_email: string; private_key: string };
+  const sa = JSON.parse(serviceAccountJson) as ServiceAccount;
+
+  const now = Math.floor(Date.now() / 1000);
+  const claim = {
+    iss: sa.client_email,
+    scope: 'https://www.googleapis.com/auth/cloud-platform',
+    aud: 'https://oauth2.googleapis.com/token',
+    exp: now + 3600,
+    iat: now,
+  };
+
+  // Build JWT
+  const header = btoa(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
+  const payload = btoa(JSON.stringify(claim));
+  const unsigned = `${header}.${payload}`;
+
+  // Import private key and sign
+  const keyData = sa.private_key
+    .replace(/-----BEGIN PRIVATE KEY-----/, '')
+    .replace(/-----END PRIVATE KEY-----/, '')
+    .replace(/\n/g, '');
+  const binaryKey = Uint8Array.from(atob(keyData), (c) => c.charCodeAt(0));
+  const cryptoKey = await crypto.subtle.importKey(
+    'pkcs8', binaryKey,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false, ['sign']
+  );
+  const signatureBytes = await crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5', cryptoKey,
+    new TextEncoder().encode(unsigned)
+  );
+  const signature = btoa(String.fromCharCode(...new Uint8Array(signatureBytes)));
+  const jwt = `${unsigned}.${signature}`;
+
+  // Exchange JWT for access token
+  const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`,
+  });
+  const tokenData = await tokenRes.json() as { access_token: string };
+  return tokenData.access_token;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: corsHeaders() });
@@ -23,12 +70,14 @@ Deno.serve(async (req: Request) => {
     const imageBytes = await image.arrayBuffer();
     const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBytes)));
 
-    const projectId = Deno.env.get('GOOGLE_PROJECT_ID');
     const processorId = Deno.env.get('GOOGLE_DOCAI_EXPENSE_PROCESSOR_ID');
-    const accessToken = Deno.env.get('GOOGLE_ACCESS_TOKEN');
+    const serviceAccountJson = Deno.env.get('GOOGLE_SERVICE_ACCOUNT_KEY');
+    if (!serviceAccountJson) throw new Error('GOOGLE_SERVICE_ACCOUNT_KEY not configured');
+
+    const accessToken = await getGoogleAccessToken(serviceAccountJson);
 
     const docAiResponse = await fetch(
-      `https://us-documentai.googleapis.com/v1/projects/${projectId}/locations/us/processors/${processorId}:process`,
+      `https://us-documentai.googleapis.com/v1/projects/472866365827/locations/us/processors/${processorId}:process`,
       {
         method: 'POST',
         headers: {
@@ -58,9 +107,7 @@ Deno.serve(async (req: Request) => {
       .map((item) => {
         const desc = item.properties?.find((p) => p.type === 'line_item/description')?.mentionText;
         const amount = item.properties?.find((p) => p.type === 'line_item/amount')?.mentionText;
-        const amountCents = amount
-          ? Math.round(parseFloat(amount.replace(/[^0-9.]/g, '')) * 100)
-          : 0;
+        const amountCents = amount ? Math.round(parseFloat(amount.replace(/[^0-9.]/g, '')) * 100) : 0;
         return { description: desc, amountCents };
       })
       .filter((i) => i.description);
@@ -69,11 +116,7 @@ Deno.serve(async (req: Request) => {
       ? `${receiptDate.year}-${String(receiptDate.month).padStart(2, '0')}-${String(receiptDate.day).padStart(2, '0')}`
       : undefined;
 
-    supabase.from('usage_events').insert({
-      user_id: user.id,
-      event: 'document_scan',
-      metadata: { item_count: lineItems.length },
-    }).then(() => {});
+    supabase.from('usage_events').insert({ user_id: user.id, event: 'document_scan', metadata: { item_count: lineItems.length } }).then(() => {});
 
     return Response.json({ storeName, receiptDate: formattedDate, lineItems }, { headers: corsHeaders() });
 
