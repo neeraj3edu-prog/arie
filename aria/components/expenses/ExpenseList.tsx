@@ -1,5 +1,4 @@
 import { View, Text, ScrollView } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
 import { ExpenseItem } from './ExpenseItem';
 import { formatCents } from '@/lib/utils/currency';
 import type { Expense } from '@/lib/types';
@@ -7,7 +6,7 @@ import type { Expense } from '@/lib/types';
 type ExpenseListProps = {
   expenses: Expense[];
   onDelete: (id: string) => void;
-  totalLabel?: string; // e.g. "3 expenses · $125.00"
+  totalLabel?: string;
 };
 
 const EXPENSE_PROMPTS = [
@@ -53,27 +52,25 @@ export function ExpenseList({ expenses, onDelete, totalLabel }: ExpenseListProps
       contentContainerStyle={{ paddingBottom: 200 }}
       showsVerticalScrollIndicator={false}
     >
-      {/* Count + total */}
       <Text style={{ color: '#f7a24f', fontSize: 13, marginHorizontal: 16, marginBottom: 10 }}>
         {totalLabel ?? summary}
       </Text>
 
-      {/* Card containing all expense rows */}
-      <View style={{ marginHorizontal: 16, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)' }}>
-        <FlashList
-          data={expenses}
-          estimatedItemSize={72}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item, index }) => (
-            <>
-              {index > 0 && (
-                <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.07)' }} />
-              )}
-              <ExpenseItem expense={item} onDelete={() => onDelete(item.id)} />
-            </>
-          )}
-          scrollEnabled={false}
-        />
+      <View style={{
+        marginHorizontal: 16,
+        borderRadius: 16,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.07)',
+      }}>
+        {expenses.map((item, index) => (
+          <View key={item.id}>
+            {index > 0 && (
+              <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.07)' }} />
+            )}
+            <ExpenseItem expense={item} onDelete={() => onDelete(item.id)} />
+          </View>
+        ))}
       </View>
     </ScrollView>
   );
