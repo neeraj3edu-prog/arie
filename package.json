@@ -1,0 +1,11 @@
+{
+  "name": "arie-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "cd aria && npm install && npm run build"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
