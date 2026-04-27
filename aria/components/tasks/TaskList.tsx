@@ -1,4 +1,4 @@
-import { View, Text } from 'react-native';
+import { View, Text, ScrollView, Platform } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { TaskItem } from './TaskItem';
 import type { Task } from '@/lib/types';
@@ -15,6 +15,10 @@ const TASK_PROMPTS = [
   '"Morning run, team meeting at 10, pick up kids"',
   '"Pay bills, review pull requests, water plants"',
 ];
+
+const Separator = () => (
+  <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.07)', marginHorizontal: 16 }} />
+);
 
 export function TaskList({ tasks, onToggle, onDelete }: TaskListProps) {
   if (tasks.length === 0) {
@@ -43,6 +47,29 @@ export function TaskList({ tasks, onToggle, onDelete }: TaskListProps) {
     );
   }
 
+  // Web: plain ScrollView — FlashList's recycler doesn't scroll reliably on mobile browsers
+  if (Platform.OS === 'web') {
+    return (
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 200 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {tasks.map((item, index) => (
+          <View key={item.id}>
+            {index > 0 && <Separator />}
+            <TaskItem
+              task={item}
+              onToggle={() => onToggle(item.id)}
+              onDelete={() => onDelete(item.id)}
+            />
+          </View>
+        ))}
+      </ScrollView>
+    );
+  }
+
+  // Native: FlashList for 60fps performance
   return (
     <FlashList
       data={tasks}
@@ -55,9 +82,7 @@ export function TaskList({ tasks, onToggle, onDelete }: TaskListProps) {
           onDelete={() => onDelete(item.id)}
         />
       )}
-      ItemSeparatorComponent={() => (
-        <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.07)', marginHorizontal: 16 }} />
-      )}
+      ItemSeparatorComponent={Separator}
       contentContainerStyle={{ paddingBottom: 200 }}
     />
   );
