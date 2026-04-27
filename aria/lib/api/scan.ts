@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { apiPost } from './client';
 
 type ScanResult = {
@@ -8,11 +9,19 @@ type ScanResult = {
 
 export async function scanDocument(imageUri: string): Promise<ScanResult> {
   const formData = new FormData();
-  formData.append('image', {
-    uri: imageUri,
-    name: 'receipt.jpg',
-    type: 'image/jpeg',
-  } as unknown as Blob);
+
+  if (Platform.OS === 'web') {
+    // On web, imageUri is a blob: URL — fetch it to get the real Blob
+    const response = await fetch(imageUri);
+    const blob = await response.blob();
+    formData.append('image', blob, 'receipt.jpg');
+  } else {
+    formData.append('image', {
+      uri: imageUri,
+      name: 'receipt.jpg',
+      type: 'image/jpeg',
+    } as unknown as Blob);
+  }
 
   const res = await apiPost('document-scan', formData);
   return res.json() as Promise<ScanResult>;

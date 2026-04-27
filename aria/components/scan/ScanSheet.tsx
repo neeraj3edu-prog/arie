@@ -80,56 +80,44 @@ export function ScanSheet({ visible, onClose, onAddExpenses, defaultCurrency = '
 
   return (
     <Sheet visible={visible} onClose={handleClose} snapHeight={400}>
-      <View className="flex-1 px-6 pt-2 pb-8">
-        <View className="flex-row items-center justify-between mb-6">
-          <Text className="text-text-primary text-lg font-bold">Scan receipt</Text>
-          <Pressable onPress={handleClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessible accessibilityRole="button" accessibilityLabel="Close">
+      <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 8, paddingBottom: 32 }}>
+        {/* Header */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+          <Text style={{ color: '#f0f0f5', fontSize: 18, fontWeight: '700' }}>Scan receipt</Text>
+          <Pressable onPress={handleClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessible accessibilityRole="button" accessibilityLabel="Close">
             <Ionicons name="close" size={22} color="#8a8aa0" />
           </Pressable>
         </View>
 
         {phase === 'pick' && (
-          <View className="gap-3">
+          <View style={{ gap: 12 }}>
             {imageUri && (
-              <Image
-                source={{ uri: imageUri }}
-                style={{ width: '100%', height: 160, borderRadius: 12 }}
-                resizeMode="cover"
-              />
+              <Image source={{ uri: imageUri }} style={{ width: '100%', height: 160, borderRadius: 12 }} resizeMode="cover" />
             )}
-            <Button
-              label="Take a photo"
-              onPress={() => pickImage(true)}
-              variant="primary"
-              accessibilityHint="Opens camera to photograph a receipt"
-            />
-            <Button
-              label="Choose from library"
-              onPress={() => pickImage(false)}
-              variant="secondary"
-              accessibilityHint="Opens photo library to select a receipt"
-            />
+            <Button label="Take a photo" onPress={() => pickImage(true)} variant="primary" accessibilityHint="Opens camera to photograph a receipt" />
+            <Button label="Choose from library" onPress={() => pickImage(false)} variant="secondary" accessibilityHint="Opens photo library to select a receipt" />
           </View>
         )}
 
         {phase === 'scanning' && (
-          <View className="flex-1 items-center justify-center gap-4">
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 }}>
             <ActivityIndicator size="large" color="#f7a24f" />
-            <Text className="text-text-secondary text-sm">Scanning receipt…</Text>
+            <Text style={{ color: '#8a8aa0', fontSize: 14 }}>Scanning receipt…</Text>
           </View>
         )}
 
         {phase === 'done' && (
-          <View className="flex-1 items-center justify-center gap-3">
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 }}>
             <Ionicons name="checkmark-circle" size={52} color="#34c759" />
-            <Text className="text-text-primary text-base font-semibold">Expenses added!</Text>
+            <Text style={{ color: '#f0f0f5', fontSize: 16, fontWeight: '600' }}>Expenses added!</Text>
           </View>
         )}
 
         {phase === 'error' && (
-          <View className="flex-1 items-center justify-center gap-4">
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 }}>
             <Ionicons name="alert-circle-outline" size={48} color="#ff453a" />
-            <Text className="text-error text-sm text-center">{error}</Text>
+            <Text style={{ color: '#ff453a', fontSize: 14, textAlign: 'center' }}>{error}</Text>
             <Button label="Try again" onPress={() => setPhase('pick')} variant="secondary" />
           </View>
         )}
