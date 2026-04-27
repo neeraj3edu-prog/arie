@@ -1,5 +1,8 @@
 {
   "buildCommand": "cd aria && npm install && npx expo export --platform web",
   "outputDirectory": "aria/dist",
-  "installCommand": "echo 'install handled in buildCommand'"
+  "installCommand": "echo 'install handled in buildCommand'",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }
