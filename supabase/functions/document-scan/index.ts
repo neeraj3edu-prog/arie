@@ -90,8 +90,13 @@ Deno.serve(async (req: Request) => {
     if (!image) return Response.json({ error: 'No image' }, { status: 400, headers: cors() });
     if (image.size > MAX_IMAGE_BYTES) return Response.json({ error: 'Image too large' }, { status: 413, headers: cors() });
 
-    const bytes = await image.arrayBuffer();
-    const base64Image = btoa(String.fromCharCode(...new Uint8Array(bytes)));
+    const bytes = new Uint8Array(await image.arrayBuffer());
+    // Chunked base64 — spread on large arrays exceeds call stack
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 8192) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+    }
+    const base64Image = btoa(binary);
 
     const saJson = Deno.env.get('GOOGLE_SERVICE_ACCOUNT_KEY') ?? '';
     const processorId = Deno.env.get('GOOGLE_DOCAI_EXPENSE_PROCESSOR_ID') ?? '';
