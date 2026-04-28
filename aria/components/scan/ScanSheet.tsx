@@ -40,15 +40,17 @@ export function ScanSheet({ visible, onClose, onAddExpenses, defaultCurrency = '
       return;
     }
 
+    const opts = { mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.6, base64: true };
     const result = fromCamera
-      ? await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 })
-      : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
+      ? await ImagePicker.launchCameraAsync(opts)
+      : await ImagePicker.launchImageLibraryAsync(opts);
 
     if (result.canceled || !result.assets[0]) return;
 
-    const uri = result.assets[0].uri;
-    setImageUri(uri);
-    await processImage(uri);
+    const asset = result.assets[0];
+    setImageUri(asset.uri);
+    // Pass base64 directly — avoids blob URL revocation on iOS Safari
+    await processImage(asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri);
   }
 
   async function processImage(uri: string) {
