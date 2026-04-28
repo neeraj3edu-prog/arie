@@ -25,12 +25,10 @@ async function getUserId(req: Request): Promise<string> {
   return user.id;
 }
 
-async function getGoogleToken(saJson: string): Promise<string> {
-  const sa = JSON.parse(saJson) as { client_email: string; private_key: string };
-
+async function getGoogleToken(clientEmail: string, privateKeyB64: string): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
   const claim = {
-    iss: sa.client_email,
+    iss: clientEmail,
     scope: 'https://www.googleapis.com/auth/cloud-platform',
     aud: 'https://oauth2.googleapis.com/token',
     exp: now + 3600,
@@ -44,12 +42,8 @@ async function getGoogleToken(saJson: string): Promise<string> {
   const payload = enc(JSON.stringify(claim));
   const unsigned = `${header}.${payload}`;
 
-  const keyStr = sa.private_key
-    .split('-----BEGIN PRIVATE KEY-----').join('')
-    .split('-----END PRIVATE KEY-----').join('')
-    .split('\n').join('')
-    .split('\r').join('')
-    .split(' ').join('');
+  // privateKeyB64 is already the raw base64 content — no headers, no newlines
+  const keyStr = privateKeyB64.split(' ').join('').split('\n').join('');
 
   const binaryKey = Uint8Array.from(atob(keyStr), (c) => c.charCodeAt(0));
   const cryptoKey = await crypto.subtle.importKey(
@@ -98,10 +92,13 @@ Deno.serve(async (req: Request) => {
     }
     const base64Image = btoa(binary);
 
-    const saJson = Deno.env.get('GOOGLE_SERVICE_ACCOUNT_KEY') ?? '';
+    const clientEmail = Deno.env.get('GOOGLE_CLIENT_EMAIL') ?? '';
+    const privateKeyB64 = Deno.env.get('GOOGLE_PRIVATE_KEY_B64') ?? '';
     const processorId = Deno.env.get('GOOGLE_DOCAI_EXPENSE_PROCESSOR_ID') ?? '';
 
-    const accessToken = await getGoogleToken(saJson);
+    if (!clientEmail || !privateKeyB64) throw new Error('Google credentials not configured');
+
+    const accessToken = await getGoogleToken(clientEmail, privateKeyB64);
 
     const docRes = await fetch(
       `https://us-documentai.googleapis.com/v1/projects/472866365827/locations/us/processors/${processorId}:process`,
@@ -152,8 +149,10 @@ Deno.serve(async (req: Request) => {
     return Response.json({ storeName, receiptDate, lineItems }, { headers: cors() });
 
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Unknown error';
+    const msg = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? err.stack : '';
+    console.error('[document-scan]', msg, stack);
     const status = msg === 'Unauthorized' ? 401 : 500;
-    return Response.json({ error: msg }, { status, headers: cors() });
+    return Response.json({ error: msg, detail: stack }, { status, headers: cors() });
   }
 });
