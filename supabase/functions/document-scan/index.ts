@@ -1,9 +1,42 @@
-import { validateRequest, checkRateLimit, corsHeaders } from '../_shared/auth.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const RATE_LIMIT = 20;
 
-// Generate a short-lived Google OAuth2 access token from a service account key.
+function corsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+}
+
+async function validateRequest(req: Request) {
+  const token = req.headers.get('Authorization')?.replace('Bearer ', '');
+  if (!token) throw new Error('Missing token');
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!
+  );
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  if (error || !user) throw new Error('Unauthorized');
+  return { user, supabase };
+}
+
+async function checkRateLimit(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  event: string,
+  maxPerHour: number
+): Promise<boolean> {
+  const { count } = await supabase
+    .from('usage_events')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('event', event)
+    .gte('created_at', new Date(Date.now() - 3_600_000).toISOString());
+  return (count ?? 0) < maxPerHour;
+}
+
 async function getGoogleAccessToken(serviceAccountJson: string): Promise<string> {
   type ServiceAccount = { client_email: string; private_key: string };
   const sa = JSON.parse(serviceAccountJson) as ServiceAccount;
@@ -17,12 +50,10 @@ async function getGoogleAccessToken(serviceAccountJson: string): Promise<string>
     iat: now,
   };
 
-  // Build JWT
   const header = btoa(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
   const payload = btoa(JSON.stringify(claim));
   const unsigned = `${header}.${payload}`;
 
-  // Import private key and sign
   const keyData = sa.private_key
     .replace(/-----BEGIN PRIVATE KEY-----/, '')
     .replace(/-----END PRIVATE KEY-----/, '')
@@ -40,7 +71,6 @@ async function getGoogleAccessToken(serviceAccountJson: string): Promise<string>
   const signature = btoa(String.fromCharCode(...new Uint8Array(signatureBytes)));
   const jwt = `${unsigned}.${signature}`;
 
-  // Exchange JWT for access token
   const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -95,7 +125,12 @@ Deno.serve(async (req: Request) => {
       return Response.json({ error: 'Document scan failed' }, { status: 502, headers: corsHeaders() });
     }
 
-    type Entity = { type: string; mentionText?: string; normalizedValue?: { dateValue?: { year: number; month: number; day: number } }; properties?: Entity[] };
+    type Entity = {
+      type: string;
+      mentionText?: string;
+      normalizedValue?: { dateValue?: { year: number; month: number; day: number } };
+      properties?: Entity[];
+    };
     const docAiData = await docAiResponse.json() as { document?: { entities?: Entity[] } };
     const entities = docAiData.document?.entities ?? [];
 
@@ -116,7 +151,11 @@ Deno.serve(async (req: Request) => {
       ? `${receiptDate.year}-${String(receiptDate.month).padStart(2, '0')}-${String(receiptDate.day).padStart(2, '0')}`
       : undefined;
 
-    supabase.from('usage_events').insert({ user_id: user.id, event: 'document_scan', metadata: { item_count: lineItems.length } }).then(() => {});
+    supabase.from('usage_events').insert({
+      user_id: user.id,
+      event: 'document_scan',
+      metadata: { item_count: lineItems.length },
+    }).then(() => {});
 
     return Response.json({ storeName, receiptDate: formattedDate, lineItems }, { headers: corsHeaders() });
 
