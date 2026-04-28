@@ -130,7 +130,11 @@ Deno.serve(async (req: Request) => {
     const entities = doc.document?.entities ?? [];
 
     const storeName = entities.find((e) => e.type === 'supplier_name')?.mentionText;
-    const dateVal = entities.find((e) => e.type === 'invoice_date')?.normalizedValue?.dateValue;
+    // Receipts use receipt_date; formal invoices use invoice_date — check both
+    const dateVal =
+      entities.find((e) => e.type === 'receipt_date')?.normalizedValue?.dateValue ??
+      entities.find((e) => e.type === 'invoice_date')?.normalizedValue?.dateValue ??
+      entities.find((e) => e.type === 'purchase_time')?.normalizedValue?.dateValue;
 
     const lineItems = entities
       .filter((e) => e.type === 'line_item')

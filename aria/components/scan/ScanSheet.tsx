@@ -22,11 +22,13 @@ export function ScanSheet({ visible, onClose, onAddExpenses, defaultCurrency = '
   const [phase, setPhase] = useState<ScanPhase>('pick');
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [detectedDate, setDetectedDate] = useState<string | null>(null);
 
   function handleClose() {
     setPhase('pick');
     setImageUri(null);
     setError(null);
+    setDetectedDate(null);
     onClose();
   }
 
@@ -60,6 +62,7 @@ export function ScanSheet({ visible, onClose, onAddExpenses, defaultCurrency = '
       const { storeName, receiptDate, lineItems } = await scanDocument(uri);
       const parsed = await parseScannedItems(lineItems);
       const date = receiptDate ?? localDateISO();
+      setDetectedDate(date);
 
       const expenses: NewExpense[] = parsed.map((p) => ({
         item: p.item,
@@ -73,7 +76,7 @@ export function ScanSheet({ visible, onClose, onAddExpenses, defaultCurrency = '
 
       onAddExpenses(expenses);
       setPhase('done');
-      setTimeout(handleClose, 800);
+      setTimeout(handleClose, 1400);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(msg);
@@ -115,6 +118,13 @@ export function ScanSheet({ visible, onClose, onAddExpenses, defaultCurrency = '
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 }}>
             <Ionicons name="checkmark-circle" size={52} color="#34c759" />
             <Text style={{ color: '#f0f0f5', fontSize: 16, fontWeight: '600' }}>Expenses added!</Text>
+            {detectedDate && (
+              <Text style={{ color: '#8a8aa0', fontSize: 13, textAlign: 'center' }}>
+                {detectedDate === localDateISO()
+                  ? 'Filed under today'
+                  : `Filed under ${new Date(detectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}
+              </Text>
+            )}
           </View>
         )}
 
