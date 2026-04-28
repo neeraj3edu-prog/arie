@@ -55,9 +55,10 @@ async function getGoogleAccessToken(serviceAccountJson: string): Promise<string>
   const unsigned = `${header}.${payload}`;
 
   const keyData = sa.private_key
-    .replace(/-----BEGIN PRIVATE KEY-----/, '')
-    .replace(/-----END PRIVATE KEY-----/, '')
-    .replace(/\n/g, '');
+    .split('-----BEGIN PRIVATE KEY-----').join('')
+    .split('-----END PRIVATE KEY-----').join('')
+    .split('\n').join('')
+    .split(' ').join('');
   const binaryKey = Uint8Array.from(atob(keyData), (c) => c.charCodeAt(0));
   const cryptoKey = await crypto.subtle.importKey(
     'pkcs8', binaryKey,
