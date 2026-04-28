@@ -73,8 +73,10 @@ export function ScanSheet({ visible, onClose, onAddExpenses, defaultCurrency = '
       setPhase('done');
       setTimeout(handleClose, 800);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Scan failed');
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg);
       setPhase('error');
+      console.error('[ScanSheet]', msg);
     }
   }
 
