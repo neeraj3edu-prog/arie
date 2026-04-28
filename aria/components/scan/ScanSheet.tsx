@@ -7,6 +7,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { scanDocument } from '@/lib/api/scan';
 import { parseScannedItems } from '@/lib/api/parse';
 import { localDateISO } from '@/lib/utils/date';
+
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function formatReceiptDate(iso: string): string {
+  // Parse YYYY-MM-DD directly — avoids iOS Safari Date timezone shifts
+  const [y, m, d] = iso.split('-').map(Number);
+  return `${MONTHS[(m ?? 1) - 1]} ${d}, ${y}`;
+}
 import type { NewExpense } from '@/lib/types';
 
 type ScanSheetProps = {
@@ -122,7 +130,7 @@ export function ScanSheet({ visible, onClose, onAddExpenses, defaultCurrency = '
               <Text style={{ color: '#8a8aa0', fontSize: 13, textAlign: 'center' }}>
                 {detectedDate === localDateISO()
                   ? 'Filed under today'
-                  : `Filed under ${new Date(detectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}
+                  : `Filed under ${formatReceiptDate(detectedDate)}`}
               </Text>
             )}
           </View>
