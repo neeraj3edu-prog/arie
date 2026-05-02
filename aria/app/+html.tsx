@@ -29,8 +29,17 @@ const globalStyles = `
   html, body {
     background-color: #0a0a0f;
     height: 100%;
-    /* Use dynamic viewport height so the browser chrome doesn't cut off content */
     height: 100dvh;
+  }
+
+  /* Fill safe-area notch/status bar with dark colour */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: env(safe-area-inset-top);
+    background-color: #0a0a0f;
+    z-index: 9999;
   }
 
   /* Root view must fill the full dynamic viewport */

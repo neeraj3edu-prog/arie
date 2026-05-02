@@ -21,11 +21,11 @@ function IconTabBar() {
         borderTopWidth: 1,
         borderTopColor: 'rgba(255,255,255,0.08)',
         paddingTop: 10,
-        paddingBottom: Platform.OS === 'ios' ? 28 : 12,
+        paddingBottom: Platform.OS === 'ios' ? 28 : 14,
       }}
     >
       {TAB_DEFS.map((tab) => {
-        const isFocused = pathname.includes(tab.name);
+        const isFocused = (pathname ?? '').includes(tab.name);
         return (
           <Pressable
             key={tab.name}
@@ -47,11 +47,7 @@ function IconTabBar() {
               size={24}
               color={isFocused ? tab.color : '#4a4a60'}
             />
-            <Text style={{
-              fontSize: 11,
-              fontWeight: '600',
-              color: isFocused ? tab.color : '#4a4a60',
-            }}>
+            <Text style={{ fontSize: 11, fontWeight: '600', color: isFocused ? tab.color : '#4a4a60' }}>
               {tab.label}
             </Text>
           </Pressable>
@@ -65,14 +61,22 @@ export default function TabLayout() {
   useFonts({ ...Ionicons.font });
 
   return (
-    <Tabs
-      tabBar={() => <IconTabBar />}
-      screenOptions={{ headerShown: false }}
-    >
-      <Tabs.Screen name="tasks"    options={{ title: 'Tasks' }} />
-      <Tabs.Screen name="expenses" options={{ title: 'Expenses' }} />
-      <Tabs.Screen name="index"    options={{ href: null }} />
-      <Tabs.Screen name="two"      options={{ href: null }} />
-    </Tabs>
+    <View style={{ flex: 1, backgroundColor: '#0a0a0f' }}>
+      {/* Screens — tab bar hidden from React Navigation, we render it ourselves */}
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarStyle: { display: 'none' },
+        }}
+      >
+        <Tabs.Screen name="tasks"    options={{ title: 'Tasks' }} />
+        <Tabs.Screen name="expenses" options={{ title: 'Expenses' }} />
+        <Tabs.Screen name="index"    options={{ href: null }} />
+        <Tabs.Screen name="two"      options={{ href: null }} />
+      </Tabs>
+
+      {/* Tab bar always rendered — not dependent on React Navigation tabBar prop */}
+      <IconTabBar />
+    </View>
   );
 }
