@@ -29,7 +29,7 @@ function IconTabBar() {
         return (
           <Pressable
             key={tab.name}
-            onPress={() => router.navigate(`/(tabs)/${tab.name}`)}
+            onPress={() => router.navigate(`/${tab.name}` as `/${string}`)}
             style={({ pressed }) => ({
               flex: 1,
               alignItems: 'center',
