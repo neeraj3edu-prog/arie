@@ -27,8 +27,8 @@ const EXPENSE_PROMPTS = [
 
 export default function ExpensesScreen() {
   const { selectedDate, activeMonth, setSelectedDate, goToPrevMonth, goToNextMonth, goToToday } = useCalendar();
-  const { data: monthExpenses = [], isLoading } = useExpensesForMonth(activeMonth);
-  const { expenses: dayExpenses = [], addExpenses, removeExpense } = useExpensesForDate(selectedDate);
+  const { data: monthExpenses = [] } = useExpensesForMonth(activeMonth);
+  const { expenses: dayExpenses = [], loading: isLoading, addExpenses, removeExpense } = useExpensesForDate(selectedDate);
   const { tasks } = useTasks(selectedDate);
   const [addSheetVisible, setAddSheetVisible] = useState(false);
   const [voiceSheetVisible, setVoiceSheetVisible] = useState(false);
