@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '@/store/authStore';
 import { getDb } from '@/lib/db/client';
+import { useRegisterPushToken, useNotificationHandler } from '@/lib/hooks/useNotifications';
 
 // Native only — SplashScreen is a no-op on web
 if (Platform.OS !== 'web') {
@@ -44,6 +45,8 @@ function AppShell() {
   const unsubRef = useRef<(() => void) | null>(null);
 
   useProtectedRoute(user, loading);
+  useRegisterPushToken();
+  useNotificationHandler();
 
   useEffect(() => {
     async function boot() {
