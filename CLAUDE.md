@@ -114,3 +114,6 @@ error:          #ff453a
 - [.claude/rules/rn-expo-best-practices.md](.claude/rules/rn-expo-best-practices.md)
 - [.claude/rules/accessibility-mobile.md](.claude/rules/accessibility-mobile.md)
 - [.claude/rules/security-supabase.md](.claude/rules/security-supabase.md)
+- [.claude/rules/design-reviewer.md](.claude/rules/design-reviewer.md) — tokens, spacing, dark theme, empty/loading/error states, platform parity
+- [.claude/rules/frontend-polish-engineer.md](.claude/rules/frontend-polish-engineer.md) — cross-platform gotchas, scroll, gestures, PWA, safe area, voice/image
+- [.claude/rules/performance-auditor.md](.claude/rules/performance-auditor.md) — re-renders, DB batching, image encoding, edge function cold starts, bundle size
