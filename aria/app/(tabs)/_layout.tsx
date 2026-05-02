@@ -1,4 +1,4 @@
-import { View, Pressable, Platform } from 'react-native';
+import { View, Text, Pressable, Platform } from 'react-native';
 import { Tabs, router, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
@@ -6,8 +6,8 @@ import { useFonts } from 'expo-font';
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
 const TAB_DEFS = [
-  { name: 'tasks',    icon: 'calendar-outline' as IoniconName, activeIcon: 'calendar' as IoniconName, color: '#4f6ef7' },
-  { name: 'expenses', icon: 'card-outline'     as IoniconName, activeIcon: 'card'     as IoniconName, color: '#f7a24f' },
+  { name: 'tasks',    label: 'Tasks',    icon: 'calendar-outline' as IoniconName, activeIcon: 'calendar' as IoniconName, color: '#4f6ef7' },
+  { name: 'expenses', label: 'Expenses', icon: 'card-outline'     as IoniconName, activeIcon: 'card'     as IoniconName, color: '#f7a24f' },
 ] as const;
 
 function IconTabBar() {
@@ -21,7 +21,7 @@ function IconTabBar() {
         borderTopWidth: 1,
         borderTopColor: 'rgba(255,255,255,0.08)',
         paddingTop: 10,
-        paddingBottom: Platform.OS === 'ios' ? 30 : 12,
+        paddingBottom: Platform.OS === 'ios' ? 28 : 12,
       }}
     >
       {TAB_DEFS.map((tab) => {
@@ -34,18 +34,26 @@ function IconTabBar() {
               flex: 1,
               alignItems: 'center',
               justifyContent: 'center',
+              gap: 3,
               opacity: pressed ? 0.5 : 1,
             })}
             accessible
             accessibilityRole="tab"
-            accessibilityLabel={tab.name === 'tasks' ? 'Tasks tab' : 'Expenses tab'}
+            accessibilityLabel={`${tab.label} tab`}
             accessibilityState={{ selected: isFocused }}
           >
             <Ionicons
               name={isFocused ? tab.activeIcon : tab.icon}
-              size={26}
+              size={24}
               color={isFocused ? tab.color : '#4a4a60'}
             />
+            <Text style={{
+              fontSize: 11,
+              fontWeight: '600',
+              color: isFocused ? tab.color : '#4a4a60',
+            }}>
+              {tab.label}
+            </Text>
           </Pressable>
         );
       })}
