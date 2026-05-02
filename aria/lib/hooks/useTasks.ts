@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AppState, Platform } from 'react-native';
-import { getTasksForDate, insertTasksBatch, toggleTask, deleteTask, upsertTasksBatch } from '@/lib/db/tasks';
+import { getTasksForDate, insertTasksBatch, toggleTask, deleteTask, upsertTasksBatch, getOverdueTasksForDate, rescheduleTask } from '@/lib/db/tasks';
 import { addToSyncQueue } from '@/lib/sync/queue';
 import { triggerSync } from '@/lib/sync/syncEngine';
 import { supabase } from '@/lib/supabase/client';
@@ -13,6 +13,13 @@ export function useTasks(date: string) {
   const query = useQuery({
     queryKey: ['tasks', date],
     queryFn: () => getTasksForDate(date),
+    staleTime: 60_000,
+    gcTime: 24 * 3_600_000,
+  });
+
+  const overdueQuery = useQuery({
+    queryKey: ['tasks', 'overdue', date],
+    queryFn: () => getOverdueTasksForDate(date),
     staleTime: 60_000,
     gcTime: 24 * 3_600_000,
   });
@@ -128,16 +135,34 @@ export function useTasks(date: string) {
       }]);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', date] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      triggerSync();
+    },
+  });
+
+  const moveToToday = useMutation({
+    mutationFn: async (id: string) => {
+      await rescheduleTask(id, date);
+      await addToSyncQueue([{
+        tableName: 'tasks',
+        recordId: id,
+        action: 'update',
+        payload: { client_id: id, scheduled_date: date, updated_at: new Date().toISOString() },
+      }]);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
       triggerSync();
     },
   });
 
   return {
     tasks: query.data ?? [],
+    overdueTasks: overdueQuery.data ?? [],
     loading: query.isLoading,
     addTasks,
     toggleTask: toggleTaskMutation,
     removeTask,
+    moveToToday,
   };
 }

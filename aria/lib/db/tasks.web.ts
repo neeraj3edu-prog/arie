@@ -140,6 +140,23 @@ export async function upsertTasksBatch(
   saveAll(all);
 }
 
+export async function getOverdueTasksForDate(date: string): Promise<Task[]> {
+  return loadAll()
+    .filter((t) => t.scheduledDate < date && t.status === 'pending')
+    .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate) || a.createdAt.localeCompare(b.createdAt));
+}
+
+export async function rescheduleTask(id: string, newDate: string): Promise<void> {
+  const all = loadAll();
+  const task = all.find((t) => t.id === id);
+  if (task) {
+    task.scheduledDate = newDate;
+    task.updatedAt = new Date().toISOString();
+    task.synced = false;
+    saveAll(all);
+  }
+}
+
 export async function getTaskCountForDate(date: string): Promise<number> {
   return loadAll().filter((t) => t.scheduledDate === date && t.status === 'pending').length;
 }

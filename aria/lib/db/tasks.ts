@@ -111,6 +111,23 @@ export async function upsertTasksBatch(
   });
 }
 
+export async function getOverdueTasksForDate(date: string): Promise<import('../types').Task[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<TaskRow>(
+    'SELECT * FROM tasks_local WHERE scheduled_date < ? AND status = ? ORDER BY scheduled_date ASC, created_at ASC',
+    [date, 'pending']
+  );
+  return rows.map(rowToTask);
+}
+
+export async function rescheduleTask(id: string, newDate: string): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    'UPDATE tasks_local SET scheduled_date = ?, updated_at = ?, synced = 0 WHERE id = ?',
+    [newDate, new Date().toISOString(), id]
+  );
+}
+
 export async function getTaskCountForDate(date: string): Promise<number> {
   const db = await getDb();
   const row = await db.getFirstAsync<{ count: number }>(

@@ -23,7 +23,8 @@ const TASK_PROMPTS = [
 
 export default function TasksScreen() {
   const { selectedDate, activeMonth, setSelectedDate, goToPrevMonth, goToNextMonth, goToToday } = useCalendar();
-  const { tasks, loading, addTasks, toggleTask, removeTask } = useTasks(selectedDate);
+  const { tasks, overdueTasks, loading, addTasks, toggleTask, removeTask, moveToToday } = useTasks(selectedDate);
+  const [showOverdue, setShowOverdue] = useState(true);
   const { data: monthExpenses = [] } = useExpensesForMonth(activeMonth);
   const [addSheetVisible, setAddSheetVisible] = useState(false);
   const [voiceSheetVisible, setVoiceSheetVisible] = useState(false);
@@ -67,6 +68,61 @@ export default function TasksScreen() {
           onNextMonth={goToNextMonth} onToday={goToToday}
           accentColor={ACCENT} datesWithTasks={datesWithTasks} datesWithExpenses={datesWithExpenses}
         />
+
+        {/* Overdue tasks from previous days */}
+        {overdueTasks.length > 0 && (
+          <View style={{ marginHorizontal: 16, marginBottom: 16 }}>
+            <Pressable
+              onPress={() => setShowOverdue((v) => !v)}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}
+            >
+              <Ionicons name="time-outline" size={14} color="#f7a24f" />
+              <Text style={{ color: '#f7a24f', fontSize: 12, fontWeight: '700', letterSpacing: 0.5 }}>
+                {overdueTasks.length} OVERDUE FROM PREVIOUS DAYS
+              </Text>
+              <Ionicons name={showOverdue ? 'chevron-up' : 'chevron-down'} size={14} color="#f7a24f" />
+            </Pressable>
+
+            {showOverdue && (
+              <View style={{ borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(247,162,79,0.2)', backgroundColor: 'rgba(247,162,79,0.04)' }}>
+                {overdueTasks.map((task, index) => {
+                  const [y, m, d] = task.scheduledDate.split('-').map(Number);
+                  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                  const dateLabel = `${MONTHS[m - 1]} ${d}`;
+                  return (
+                    <View key={task.id}>
+                      {index > 0 && <View style={{ height: 1, backgroundColor: 'rgba(247,162,79,0.15)' }} />}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 11 }}>
+                        <Pressable
+                          onPress={() => toggleTask.mutate(task.id)}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          style={{ marginRight: 10 }}
+                        >
+                          <Ionicons name="square-outline" size={22} color="#4a4a60" />
+                        </Pressable>
+                        <Text style={{ flex: 1, fontSize: 14, color: '#6a6a80', textDecorationLine: 'none' }} numberOfLines={1}>
+                          {task.text}
+                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                          <View style={{ backgroundColor: 'rgba(247,162,79,0.15)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                            <Text style={{ color: '#f7a24f', fontSize: 11, fontWeight: '600' }}>{dateLabel}</Text>
+                          </View>
+                          <Pressable
+                            onPress={() => moveToToday.mutate(task.id)}
+                            hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                            accessible accessibilityLabel="Move to today"
+                          >
+                            <Ionicons name="arrow-forward-circle-outline" size={20} color="#4f6ef7" />
+                          </Pressable>
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Section header */}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginBottom: 12 }}>
