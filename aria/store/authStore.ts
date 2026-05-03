@@ -12,7 +12,7 @@ function getOAuthRedirectUrl(): string {
       : 'http://localhost:8082/';
   }
   // On native, use the deep-link scheme
-  return 'aria://auth/callback';
+  return 'planora://auth/callback';
 }
 
 type AuthStore = {

@@ -55,6 +55,12 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "cc59e195-f849-4016-acb0-f9c1385a35e1"
+      }
+    },
+    "owner": "neeraj3edu"
   }
 }
