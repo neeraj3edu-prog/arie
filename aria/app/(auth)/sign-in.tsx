@@ -49,7 +49,7 @@ export default function SignInScreen() {
         <View className="w-20 h-20 bg-tasks rounded-3xl items-center justify-center mb-6">
           <Ionicons name="mic" size={40} color="#fff" />
         </View>
-        <Text className="text-text-primary text-4xl font-bold tracking-tight">Aria</Text>
+        <Text className="text-text-primary text-4xl font-bold tracking-tight">Planora</Text>
         <Text className="text-text-secondary text-base mt-2 text-center">
           Voice-first tasks & expenses
         </Text>

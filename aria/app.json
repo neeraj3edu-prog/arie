@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Aria",
-    "slug": "aria",
+    "name": "Planora",
+    "slug": "planora",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "aria",
+    "scheme": "planora",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
@@ -15,15 +15,15 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.aria.app",
+      "bundleIdentifier": "com.planora.app",
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "Aria uses your microphone to record voice tasks and expenses",
-        "NSCameraUsageDescription": "Aria uses your camera to scan receipts",
-        "NSPhotoLibraryUsageDescription": "Aria accesses your photos to scan receipts"
+        "NSMicrophoneUsageDescription": "Planora uses your microphone to record voice tasks and expenses",
+        "NSCameraUsageDescription": "Planora uses your camera to scan receipts",
+        "NSPhotoLibraryUsageDescription": "Planora accesses your photos to scan receipts"
       }
     },
     "android": {
-      "package": "com.aria.app",
+      "package": "com.planora.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#0a0a0f"
