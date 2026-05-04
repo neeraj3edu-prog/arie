@@ -15,15 +15,16 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.planora.app",
+      "bundleIdentifier": "com.neerajjoshi.planora",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Planora uses your microphone to record voice tasks and expenses",
         "NSCameraUsageDescription": "Planora uses your camera to scan receipts",
-        "NSPhotoLibraryUsageDescription": "Planora accesses your photos to scan receipts"
+        "NSPhotoLibraryUsageDescription": "Planora accesses your photos to scan receipts",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.planora.app",
+      "package": "com.neerajjoshi.planora",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#0a0a0f"
