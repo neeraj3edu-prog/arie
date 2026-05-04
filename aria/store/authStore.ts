@@ -1,12 +1,8 @@
 import { create } from 'zustand';
 import { Platform } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client';
 import type { AuthUser } from '@/lib/types';
-
-// Required for expo-web-browser OAuth session completion on iOS
-WebBrowser.maybeCompleteAuthSession();
 
 type AuthStore = {
   user: AuthUser | null;
@@ -67,29 +63,10 @@ export const useAuthStore = create<AuthStore>((set) => ({
   },
 
   signInWithGoogle: async () => {
-    if (Platform.OS === 'web') {
-      // Web: Supabase handles the redirect automatically
-      const redirectTo = typeof window !== 'undefined'
-        ? `${window.location.origin}/`
-        : 'http://localhost:8082/';
-      await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } });
-      return;
-    }
-
-    // Native: use expo-web-browser to keep the session alive through the redirect
-    const redirectTo = 'planora://auth/callback';
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo, skipBrowserRedirect: true },
-    });
-    if (error) throw error;
-    if (!data.url) return;
-
-    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-    if (result.type === 'success') {
-      // Exchange the auth code in the redirect URL for a real session
-      await supabase.auth.exchangeCodeForSession(result.url);
-    }
+    const redirectTo = Platform.OS === 'web'
+      ? (typeof window !== 'undefined' ? `${window.location.origin}/` : 'http://localhost:8082/')
+      : 'planora://auth/callback';
+    await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } });
   },
 
   signInWithApple: async (identityToken: string) => {

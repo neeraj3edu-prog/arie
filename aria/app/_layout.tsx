@@ -6,8 +6,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Linking from 'expo-linking';
 import { useAuthStore } from '@/store/authStore';
 import { getDb } from '@/lib/db/client';
+import { supabase } from '@/lib/supabase/client';
 import { useRegisterPushToken, useNotificationHandler } from '@/lib/hooks/useNotifications';
 
 // Native only — SplashScreen is a no-op on web
@@ -47,6 +49,24 @@ function AppShell() {
   useProtectedRoute(user, loading);
   useRegisterPushToken();
   useNotificationHandler();
+
+  // Handle OAuth deep link redirect: planora://auth/callback?code=...
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+
+    async function handleUrl(url: string) {
+      if (url.startsWith('planora://auth/callback')) {
+        await supabase.auth.exchangeCodeForSession(url);
+      }
+    }
+
+    // App opened fresh via deep link
+    Linking.getInitialURL().then((url) => { if (url) handleUrl(url); });
+
+    // App already running, deep link arrives
+    const sub = Linking.addEventListener('url', ({ url }) => handleUrl(url));
+    return () => sub.remove();
+  }, []);
 
   useEffect(() => {
     async function boot() {
