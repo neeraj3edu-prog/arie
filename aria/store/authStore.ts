@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Platform } from 'react-native';
+import { Platform, Linking } from 'react-native';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client';
 import type { AuthUser } from '@/lib/types';
@@ -63,10 +63,22 @@ export const useAuthStore = create<AuthStore>((set) => ({
   },
 
   signInWithGoogle: async () => {
-    const redirectTo = Platform.OS === 'web'
-      ? (typeof window !== 'undefined' ? `${window.location.origin}/` : 'http://localhost:8082/')
-      : 'planora://auth/callback';
-    await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } });
+    if (Platform.OS === 'web') {
+      const redirectTo = typeof window !== 'undefined'
+        ? `${window.location.origin}/`
+        : 'http://localhost:8082/';
+      await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } });
+      return;
+    }
+
+    // On native, signInWithOAuth returns the URL but does NOT open the browser.
+    // We must open it ourselves, then catch the planora://auth/callback deep link in _layout.tsx.
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: 'planora://auth/callback', skipBrowserRedirect: true },
+    });
+    if (error) throw error;
+    if (data.url) await Linking.openURL(data.url);
   },
 
   signInWithApple: async (identityToken: string) => {
