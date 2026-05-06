@@ -1,10 +1,8 @@
-import { View, Text, Pressable, Dimensions } from 'react-native';
+import { View, Text, Pressable, useWindowDimensions } from 'react-native';
 import { Tabs, router, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-const SCREEN_WIDTH = Dimensions.get('window').width;
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -16,12 +14,14 @@ const TAB_DEFS = [
 function IconTabBar() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const tabWidth = width / TAB_DEFS.length;
 
   return (
     <View
       style={{
         flexDirection: 'row',
-        width: SCREEN_WIDTH,
+        width,
         backgroundColor: '#0a0a0f',
         borderTopWidth: 1,
         borderTopColor: 'rgba(255,255,255,0.08)',
@@ -36,7 +36,7 @@ function IconTabBar() {
             key={tab.name}
             onPress={() => router.navigate(`/(tabs)/${tab.name}`)}
             style={({ pressed }) => ({
-              flex: 1,
+              width: tabWidth,
               alignItems: 'center',
               justifyContent: 'center',
               gap: 4,
@@ -67,7 +67,6 @@ export default function TabLayout() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#0a0a0f' }}>
-      {/* Screens — tab bar hidden from React Navigation, we render it ourselves */}
       <Tabs
         screenOptions={{
           headerShown: false,
@@ -80,7 +79,6 @@ export default function TabLayout() {
         <Tabs.Screen name="two"      options={{ href: null }} />
       </Tabs>
 
-      {/* Tab bar always rendered — not dependent on React Navigation tabBar prop */}
       <IconTabBar />
     </View>
   );
