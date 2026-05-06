@@ -9,11 +9,19 @@
       "distribution": "internal",
       "ios": { "simulator": false },
       "env": {
-        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://krumjfjmwdkndzvrbgiv.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_VFdIoSFG39ElVJ0j9KaLIQ_ztd5OABW",
+        "EXPO_PUBLIC_EAS_PROJECT_ID": "cc59e195-f849-4016-acb0-f9c1385a35e1"
       }
     },
     "production": {
-      "distribution": "store"
+      "distribution": "store",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://krumjfjmwdkndzvrbgiv.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_VFdIoSFG39ElVJ0j9KaLIQ_ztd5OABW",
+        "EXPO_PUBLIC_EAS_PROJECT_ID": "cc59e195-f849-4016-acb0-f9c1385a35e1"
+      }
     }
   },
   "submit": {
