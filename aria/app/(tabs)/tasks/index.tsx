@@ -1,5 +1,5 @@
 import { View, Text, Pressable, ActivityIndicator, ScrollView } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { useTasks } from '@/lib/hooks/useTasks';
@@ -22,9 +22,7 @@ const TASK_PROMPTS = [
 ];
 
 export default function TasksScreen() {
-  const insets = useSafeAreaInsets();
-  // Position FAB above the absolute tab bar (56px content + bottom inset + 16px gap)
-  const fabBottom = 56 + Math.max(insets.bottom, 16) + 16;
+  const fabBottom = 16;
   const { selectedDate, activeMonth, setSelectedDate, goToPrevMonth, goToNextMonth, goToToday } = useCalendar();
   const { tasks, overdueTasks, loading, addTasks, toggleTask, removeTask, moveToToday } = useTasks(selectedDate);
   const [showOverdue, setShowOverdue] = useState(true);
