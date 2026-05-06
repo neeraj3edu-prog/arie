@@ -30,7 +30,7 @@ function useProtectedRoute(user: unknown, loading: boolean) {
   useEffect(() => {
     if (loading) return;
 
-    const inAuthGroup = segments[0] === '(auth)';
+    const inAuthGroup = segments[0] === '(auth)' || segments[0] === 'auth';
     const onRootIndex = segments[0] === '(tabs)' && segments[1] === 'index';
 
     if (!user && !inAuthGroup) {

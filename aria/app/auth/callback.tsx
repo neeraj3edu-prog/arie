@@ -3,16 +3,15 @@ import { View, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { supabase } from '@/lib/supabase/client';
+import { useAuthStore } from '@/store/authStore';
 import { consumePendingOAuthUrl } from '@/lib/oauthUrl';
 
 async function handleOAuthUrl(url: string, onError: () => void) {
-  // PKCE flow: ?code=XXXX
   if (url.includes('code=')) {
     const { error } = await supabase.auth.exchangeCodeForSession(url);
     if (error) onError();
     return;
   }
-  // Implicit flow: #access_token=XXXX
   if (url.includes('access_token=')) {
     const hash = url.split('#')[1] ?? '';
     const params = new URLSearchParams(hash);
@@ -31,19 +30,30 @@ export default function AuthCallback() {
   const router = useRouter();
   const hookUrl = Linking.useURL();
   const [done, setDone] = useState(false);
+  const user = useAuthStore((s) => s.user);
 
+  // Already logged in (cached session) — skip straight to tasks
   useEffect(() => {
-    if (done) return;
+    if (user) router.replace('/(tabs)/tasks');
+  }, [user, router]);
 
-    // Primary: URL captured early in _layout.tsx before this screen mounted
+  // Fallback: if no OAuth URL arrives within 4 seconds, go to sign-in
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (!done) router.replace('/(auth)/sign-in');
+    }, 4000);
+    return () => clearTimeout(t);
+  }, [done, router]);
+
+  // Exchange the OAuth code from the deep link
+  useEffect(() => {
+    if (done || user) return;
     const captured = consumePendingOAuthUrl();
     const url = captured ?? hookUrl;
     if (!url) return;
-
     setDone(true);
     handleOAuthUrl(url, () => router.replace('/(auth)/sign-in'));
-    // On success: onAuthStateChange fires → useProtectedRoute navigates to /(tabs)/tasks
-  }, [hookUrl, done, router]);
+  }, [hookUrl, done, user, router]);
 
   return (
     <View style={{ flex: 1, backgroundColor: '#0a0a0f', alignItems: 'center', justifyContent: 'center' }}>
