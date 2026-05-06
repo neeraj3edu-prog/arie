@@ -74,9 +74,18 @@ function ExpenseItemNative({ expense, onDelete }: ExpenseItemProps) {
           <Text style={{ color: '#f0f0f5', fontSize: 15, fontWeight: '600' }} numberOfLines={1}>{expense.item}</Text>
           <Text style={{ color: subtitleColor, fontSize: 13, marginTop: 2 }} numberOfLines={1}>{subtitle}</Text>
         </View>
-        <Text style={{ color: '#f7a24f', fontSize: 16, fontWeight: '700' }}>
+        <Text style={{ color: '#f7a24f', fontSize: 16, fontWeight: '700', marginRight: 12 }}>
           {formatCents(expense.amount, expense.currency)}
         </Text>
+        <Pressable
+          onPress={handleDelete}
+          hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel={`Delete ${expense.item}`}
+        >
+          <Ionicons name="trash-outline" size={18} color="#ff453a" />
+        </Pressable>
       </View>
     </Swipeable>
   );
