@@ -32,6 +32,8 @@ export function useVoiceRecorder(
       return;
     }
 
+    // Reset audio session first — clears stale background state (e.g. after returning from Safari OAuth)
+    await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
     await Audio.setAudioModeAsync({
       allowsRecordingIOS: true,
       playsInSilentModeIOS: true,
