@@ -94,6 +94,9 @@ export function useTasks(date: string) {
       queryClient.invalidateQueries({ queryKey: ['tasks', date] });
       triggerSync();
     },
+    onError: (err) => {
+      if (__DEV__) console.error('[addTasks] failed:', err);
+    },
   });
 
   const toggleTaskMutation = useMutation({

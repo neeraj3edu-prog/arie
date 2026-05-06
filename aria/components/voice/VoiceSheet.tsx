@@ -43,7 +43,9 @@ export function VoiceSheet({
   async function handleTranscript(transcript: string) {
     try {
       if (mode === 'tasks') {
+        if (__DEV__) console.log('[VoiceSheet] transcript:', transcript);
         const parsed = await parseTasks(transcript);
+        if (__DEV__) console.log('[VoiceSheet] parsed tasks:', parsed);
         if (parsed.length > 0) {
           onAddTasks(parsed.map((p) => p.text));
         } else {
