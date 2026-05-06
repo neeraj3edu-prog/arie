@@ -10,6 +10,11 @@ import { AddExpenseSheet } from '@/components/input/AddExpenseSheet';
 import { VoiceSheet } from '@/components/voice/VoiceSheet';
 import { ScanSheet } from '@/components/scan/ScanSheet';
 import { isToday } from '@/lib/utils/date';
+
+function formatSectionDate(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
 import { formatCents } from '@/lib/utils/currency';
 import type { NewExpense } from '@/lib/types';
 
@@ -37,9 +42,7 @@ export default function ExpensesScreen() {
   const datesWithExpenses = new Set(monthExpenses.map((e) => e.date));
   const displayExpenses = dayView === 'day' ? dayExpenses : monthExpenses;
 
-  const sectionLabel = isToday(selectedDate)
-    ? 'Today'
-    : new Date(...(selectedDate.split('-').map(Number) as [number, number, number])).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const sectionLabel = isToday(selectedDate) ? 'Today' : formatSectionDate(selectedDate);
 
   const [year, month] = activeMonth.split('-').map(Number);
   const monthLabel = `${MONTH_NAMES[month - 1]} ${year}`;

@@ -9,6 +9,11 @@ import { TaskItem } from '@/components/tasks/TaskItem';
 import { AddTaskSheet } from '@/components/input/AddTaskSheet';
 import { VoiceSheet } from '@/components/voice/VoiceSheet';
 import { isToday } from '@/lib/utils/date';
+
+function formatSectionDate(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
 import type { NewExpense } from '@/lib/types';
 
 const ACCENT = '#4f6ef7';
@@ -33,9 +38,7 @@ export default function TasksScreen() {
   const [year, month] = activeMonth.split('-').map(Number);
   const monthLabel = `${MONTH_NAMES[month - 1]} ${year}`;
 
-  const sectionLabel = isToday(selectedDate)
-    ? 'Today'
-    : new Date(...(selectedDate.split('-').map(Number) as [number, number, number])).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const sectionLabel = isToday(selectedDate) ? 'Today' : formatSectionDate(selectedDate);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#0a0a0f' }} edges={['top']}>
