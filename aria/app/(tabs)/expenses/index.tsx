@@ -1,5 +1,5 @@
 import { View, Text, Pressable, ActivityIndicator, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { useCalendar } from '@/lib/hooks/useCalendar';
@@ -26,6 +26,8 @@ const EXPENSE_PROMPTS = [
 ];
 
 export default function ExpensesScreen() {
+  const insets = useSafeAreaInsets();
+  const fabBottom = 56 + Math.max(insets.bottom, 16) + 16;
   const { selectedDate, activeMonth, setSelectedDate, goToPrevMonth, goToNextMonth, goToToday } = useCalendar();
   const { data: monthExpenses = [] } = useExpensesForMonth(activeMonth);
   const { expenses: dayExpenses = [], loading: isLoading, addExpenses, removeExpense } = useExpensesForDate(selectedDate);
@@ -146,7 +148,7 @@ export default function ExpensesScreen() {
       <Pressable
         onPress={() => setVoiceSheetVisible(true)}
         style={{
-          position: 'absolute', bottom: 24,
+          position: 'absolute', bottom: fabBottom,
           alignSelf: 'center', left: '50%', marginLeft: -32,
           width: 64, height: 64, borderRadius: 32,
           backgroundColor: ACCENT,

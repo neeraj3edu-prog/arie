@@ -1,5 +1,5 @@
 import { View, Text, Pressable, ActivityIndicator, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { useTasks } from '@/lib/hooks/useTasks';
@@ -22,6 +22,9 @@ const TASK_PROMPTS = [
 ];
 
 export default function TasksScreen() {
+  const insets = useSafeAreaInsets();
+  // Position FAB above the absolute tab bar (56px content + bottom inset + 16px gap)
+  const fabBottom = 56 + Math.max(insets.bottom, 16) + 16;
   const { selectedDate, activeMonth, setSelectedDate, goToPrevMonth, goToNextMonth, goToToday } = useCalendar();
   const { tasks, overdueTasks, loading, addTasks, toggleTask, removeTask, moveToToday } = useTasks(selectedDate);
   const [showOverdue, setShowOverdue] = useState(true);
@@ -162,7 +165,7 @@ export default function TasksScreen() {
       <Pressable
         onPress={() => setVoiceSheetVisible(true)}
         style={{
-          position: 'absolute', bottom: 24,
+          position: 'absolute', bottom: fabBottom,
           alignSelf: 'center', left: '50%', marginLeft: -32,
           width: 64, height: 64, borderRadius: 32,
           backgroundColor: ACCENT,
