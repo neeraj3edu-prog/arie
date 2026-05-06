@@ -1,6 +1,6 @@
 import '../global.css';
-import { useEffect, useRef, useState } from 'react';
-import { View, Text, Pressable, ActivityIndicator, Platform } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { View, Text, Pressable, ActivityIndicator, Platform, Dimensions } from 'react-native';
 import { Slot, useRouter, useSegments, usePathname, router as expoRouter } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -31,16 +31,18 @@ const TAB_DEFS = [
   { name: 'expenses', label: 'Expenses', icon: 'card-outline'     as IoniconName, activeIcon: 'card'     as IoniconName, color: '#f7a24f' },
 ] as const;
 
-function RootTabBar({ width }: { width: number }) {
+function RootTabBar() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const showTabs = TAB_DEFS.some(t => (pathname ?? '').includes(t.name));
   if (!showTabs) return null;
-  const tabW = width > 0 ? width / TAB_DEFS.length : 0;
 
+  const screenWidth = Dimensions.get('window').width;
+  const tabW = screenWidth / TAB_DEFS.length;
   return (
     <View style={{
       flexDirection: 'row',
+      width: screenWidth,
       backgroundColor: '#0a0a0f',
       borderTopWidth: 1,
       borderTopColor: 'rgba(255,255,255,0.08)',
@@ -50,30 +52,25 @@ function RootTabBar({ width }: { width: number }) {
       {TAB_DEFS.map((tab) => {
         const isFocused = (pathname ?? '').includes(tab.name);
         return (
-          <Pressable
-            key={tab.name}
-            onPress={() => expoRouter.navigate(`/(tabs)/${tab.name}`)}
-            style={({ pressed }) => ({
-              width: tabW || '50%',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 4,
-              opacity: pressed ? 0.5 : 1,
-            })}
-            accessible
-            accessibilityRole="tab"
-            accessibilityLabel={`${tab.label} tab`}
-            accessibilityState={{ selected: isFocused }}
-          >
-            <Ionicons
-              name={isFocused ? tab.activeIcon : tab.icon}
-              size={26}
-              color={isFocused ? tab.color : '#4a4a60'}
-            />
-            <Text style={{ fontSize: 11, fontWeight: '600', color: isFocused ? tab.color : '#4a4a60' }}>
-              {tab.label}
-            </Text>
-          </Pressable>
+          <View key={tab.name} style={{ width: tabW, alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+            <Pressable
+              onPress={() => expoRouter.navigate(`/(tabs)/${tab.name}`)}
+              style={{ alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 4 }}
+              accessible
+              accessibilityRole="tab"
+              accessibilityLabel={`${tab.label} tab`}
+              accessibilityState={{ selected: isFocused }}
+            >
+              <Ionicons
+                name={isFocused ? tab.activeIcon : tab.icon}
+                size={26}
+                color={isFocused ? tab.color : '#4a4a60'}
+              />
+              <Text style={{ fontSize: 11, fontWeight: '600', color: isFocused ? tab.color : '#4a4a60' }}>
+                {tab.label}
+              </Text>
+            </Pressable>
+          </View>
         );
       })}
     </View>
@@ -100,8 +97,6 @@ function useProtectedRoute(user: unknown, loading: boolean) {
 function AppShell() {
   const { user, loading, initialize } = useAuthStore();
   const unsubRef = useRef<(() => void) | null>(null);
-  const [rootWidth, setRootWidth] = useState(0);
-
   useProtectedRoute(user, loading);
   useRegisterPushToken();
   useNotificationHandler();
@@ -139,14 +134,11 @@ function AppShell() {
 
   // Tab bar lives here at the root level — guaranteed full screen width
   return (
-    <View
-      style={{ flex: 1, backgroundColor: '#0a0a0f' }}
-      onLayout={(e) => setRootWidth(e.nativeEvent.layout.width)}
-    >
+    <View style={{ flex: 1, backgroundColor: '#0a0a0f' }}>
       <View style={{ flex: 1 }}>
         <Slot />
       </View>
-      <RootTabBar width={rootWidth} />
+      <RootTabBar />
     </View>
   );
 }
