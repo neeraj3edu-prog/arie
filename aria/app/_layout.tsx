@@ -1,5 +1,5 @@
 import '../global.css';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator, Platform } from 'react-native';
 import { Slot, useRouter, useSegments, usePathname, router as expoRouter } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -31,11 +31,12 @@ const TAB_DEFS = [
   { name: 'expenses', label: 'Expenses', icon: 'card-outline'     as IoniconName, activeIcon: 'card'     as IoniconName, color: '#f7a24f' },
 ] as const;
 
-function RootTabBar() {
+function RootTabBar({ width }: { width: number }) {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const showTabs = TAB_DEFS.some(t => (pathname ?? '').includes(t.name));
   if (!showTabs) return null;
+  const tabW = width > 0 ? width / TAB_DEFS.length : 0;
 
   return (
     <View style={{
@@ -53,7 +54,7 @@ function RootTabBar() {
             key={tab.name}
             onPress={() => expoRouter.navigate(`/(tabs)/${tab.name}`)}
             style={({ pressed }) => ({
-              flex: 1,
+              width: tabW || '50%',
               alignItems: 'center',
               justifyContent: 'center',
               gap: 4,
@@ -135,13 +136,18 @@ function AppShell() {
     );
   }
 
+  const [rootWidth, setRootWidth] = useState(0);
+
   // Tab bar lives here at the root level — guaranteed full screen width
   return (
-    <View style={{ flex: 1, backgroundColor: '#0a0a0f' }}>
+    <View
+      style={{ flex: 1, backgroundColor: '#0a0a0f' }}
+      onLayout={(e) => setRootWidth(e.nativeEvent.layout.width)}
+    >
       <View style={{ flex: 1 }}>
         <Slot />
       </View>
-      <RootTabBar />
+      <RootTabBar width={rootWidth} />
     </View>
   );
 }
