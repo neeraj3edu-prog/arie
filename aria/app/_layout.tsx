@@ -100,6 +100,7 @@ function useProtectedRoute(user: unknown, loading: boolean) {
 function AppShell() {
   const { user, loading, initialize } = useAuthStore();
   const unsubRef = useRef<(() => void) | null>(null);
+  const [rootWidth, setRootWidth] = useState(0);
 
   useProtectedRoute(user, loading);
   useRegisterPushToken();
@@ -135,8 +136,6 @@ function AppShell() {
       </View>
     );
   }
-
-  const [rootWidth, setRootWidth] = useState(0);
 
   // Tab bar lives here at the root level — guaranteed full screen width
   return (
