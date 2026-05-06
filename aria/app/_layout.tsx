@@ -1,12 +1,14 @@
 import '../global.css';
 import { useEffect, useRef } from 'react';
-import { View, ActivityIndicator, Platform } from 'react-native';
-import { Slot, useRouter, useSegments } from 'expo-router';
+import { View, Text, Pressable, ActivityIndicator, Platform } from 'react-native';
+import { Slot, useRouter, useSegments, usePathname, router as expoRouter } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Linking from 'expo-linking';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/store/authStore';
 import { getDb } from '@/lib/db/client';
 import { setPendingOAuthUrl } from '@/lib/oauthUrl';
@@ -23,16 +25,68 @@ const queryClient = new QueryClient({
   },
 });
 
+type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
+const TAB_DEFS = [
+  { name: 'tasks',    label: 'Tasks',    icon: 'calendar-outline' as IoniconName, activeIcon: 'calendar' as IoniconName, color: '#4f6ef7' },
+  { name: 'expenses', label: 'Expenses', icon: 'card-outline'     as IoniconName, activeIcon: 'card'     as IoniconName, color: '#f7a24f' },
+] as const;
+
+function RootTabBar() {
+  const pathname = usePathname();
+  const insets = useSafeAreaInsets();
+  const showTabs = TAB_DEFS.some(t => (pathname ?? '').includes(t.name));
+  if (!showTabs) return null;
+
+  return (
+    <View style={{
+      flexDirection: 'row',
+      backgroundColor: '#0a0a0f',
+      borderTopWidth: 1,
+      borderTopColor: 'rgba(255,255,255,0.08)',
+      paddingTop: 12,
+      paddingBottom: Math.max(insets.bottom, 16),
+    }}>
+      {TAB_DEFS.map((tab) => {
+        const isFocused = (pathname ?? '').includes(tab.name);
+        return (
+          <Pressable
+            key={tab.name}
+            onPress={() => expoRouter.navigate(`/(tabs)/${tab.name}`)}
+            style={({ pressed }) => ({
+              flex: 1,
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 4,
+              opacity: pressed ? 0.5 : 1,
+            })}
+            accessible
+            accessibilityRole="tab"
+            accessibilityLabel={`${tab.label} tab`}
+            accessibilityState={{ selected: isFocused }}
+          >
+            <Ionicons
+              name={isFocused ? tab.activeIcon : tab.icon}
+              size={26}
+              color={isFocused ? tab.color : '#4a4a60'}
+            />
+            <Text style={{ fontSize: 11, fontWeight: '600', color: isFocused ? tab.color : '#4a4a60' }}>
+              {tab.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 function useProtectedRoute(user: unknown, loading: boolean) {
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
     if (loading) return;
-
     const inAuthGroup = segments[0] === '(auth)' || segments[0] === 'auth';
     const onRootIndex = segments[0] === '(tabs)' && segments[1] === 'index';
-
     if (!user && !inAuthGroup) {
       router.replace('/(auth)/sign-in');
     } else if (user && (inAuthGroup || onRootIndex)) {
@@ -50,8 +104,6 @@ function AppShell() {
   useRegisterPushToken();
   useNotificationHandler();
 
-  // Capture OAuth callback URL as early as possible — before auth/callback screen mounts.
-  // The URL event fires when iOS foregrounds the app, which is before React re-renders.
   useEffect(() => {
     if (Platform.OS === 'web') return;
     const capture = (url: string) => {
@@ -77,22 +129,32 @@ function AppShell() {
 
   if (loading) {
     return (
-      <View className="flex-1 bg-bg items-center justify-center">
+      <View style={{ flex: 1, backgroundColor: '#0a0a0f', alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator size="large" color="#4f6ef7" />
       </View>
     );
   }
 
-  return <Slot />;
+  // Tab bar lives here at the root level — guaranteed full screen width
+  return (
+    <View style={{ flex: 1, backgroundColor: '#0a0a0f' }}>
+      <View style={{ flex: 1 }}>
+        <Slot />
+      </View>
+      <RootTabBar />
+    </View>
+  );
 }
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView className="flex-1">
-      <QueryClientProvider client={queryClient}>
-        <StatusBar style="light" />
-        <AppShell />
-      </QueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <QueryClientProvider client={queryClient}>
+          <StatusBar style="light" />
+          <AppShell />
+        </QueryClientProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
