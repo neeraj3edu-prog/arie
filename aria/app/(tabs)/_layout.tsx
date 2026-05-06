@@ -41,10 +41,10 @@ function IconTabBar() {
             key={tab.name}
             onPress={() => router.navigate(`/(tabs)/${tab.name}`)}
             style={({ pressed }) => ({
-              flex: 1,
+              width: `${100 / TAB_DEFS.length}%`,
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 4,
+              paddingVertical: 4,
               opacity: pressed ? 0.5 : 1,
             })}
             accessible
