@@ -95,6 +95,16 @@ function TaskItemNative({ task, onToggle, onDelete }: TaskItemProps) {
           {task.text}
         </Text>
         {task.reminderAt && <Ionicons name="alarm-outline" size={16} color="#4a4a60" style={{ marginLeft: 8 }} />}
+        <Pressable
+          onPress={handleDelete}
+          hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+          style={{ marginLeft: 12 }}
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel={`Delete ${task.text}`}
+        >
+          <Ionicons name="trash-outline" size={18} color="#ff453a" />
+        </Pressable>
       </View>
     </Swipeable>
   );
