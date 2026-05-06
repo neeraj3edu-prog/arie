@@ -6,8 +6,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Linking from 'expo-linking';
 import { useAuthStore } from '@/store/authStore';
 import { getDb } from '@/lib/db/client';
+import { setPendingOAuthUrl } from '@/lib/oauthUrl';
 import { useRegisterPushToken, useNotificationHandler } from '@/lib/hooks/useNotifications';
 
 // Native only — SplashScreen is a no-op on web
@@ -47,6 +49,18 @@ function AppShell() {
   useProtectedRoute(user, loading);
   useRegisterPushToken();
   useNotificationHandler();
+
+  // Capture OAuth callback URL as early as possible — before auth/callback screen mounts.
+  // The URL event fires when iOS foregrounds the app, which is before React re-renders.
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    const capture = (url: string) => {
+      if (url.startsWith('planora://auth/callback')) setPendingOAuthUrl(url);
+    };
+    Linking.getInitialURL().then(url => { if (url) capture(url); });
+    const sub = Linking.addEventListener('url', ({ url }) => capture(url));
+    return () => sub.remove();
+  }, []);
 
   useEffect(() => {
     async function boot() {
