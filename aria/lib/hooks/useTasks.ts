@@ -6,6 +6,7 @@ import { addToSyncQueue } from '@/lib/sync/queue';
 import { triggerSync } from '@/lib/sync/syncEngine';
 import { supabase } from '@/lib/supabase/client';
 import type { NewTask } from '@/lib/types';
+import { generateUUID } from '@/lib/utils/uuid';
 
 export function useTasks(date: string) {
   const queryClient = useQueryClient();
@@ -61,7 +62,7 @@ export function useTasks(date: string) {
     mutationFn: async (texts: string[]) => {
       const now = new Date().toISOString();
       const newTasks = texts.map((text) => ({
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         text,
         scheduledDate: date,
         reminderAt: null,

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { generateUUID } from '@/lib/utils/uuid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AppState, Platform } from 'react-native';
 import {
@@ -25,7 +26,7 @@ export function useExpensesForDate(date: string) {
   const addExpenses = useMutation({
     mutationFn: async (expenses: NewExpense[]) => {
       const now = new Date().toISOString();
-      const newExpenses = expenses.map((e) => ({ ...e, id: crypto.randomUUID(), createdAt: now }));
+      const newExpenses = expenses.map((e) => ({ ...e, id: generateUUID(), createdAt: now }));
 
       // Write to local DB first (SQLite on native, localStorage on web)
       await insertExpensesBatch(newExpenses);
