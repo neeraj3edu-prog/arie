@@ -87,8 +87,12 @@ export function useExpensesForMonth(monthPrefix: string) {
   // Realtime push for native (web syncs via syncEngine.web.ts)
   useEffect(() => {
     if (Platform.OS === 'web') return;
+    const channelName = `expenses:${monthPrefix}`;
+    supabase.getChannels()
+      .filter(c => c.topic === `realtime:${channelName}`)
+      .forEach(c => supabase.removeChannel(c));
     const channel = supabase
-      .channel(`expenses:${monthPrefix}`)
+      .channel(channelName)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, async () => {
         queryClient.invalidateQueries({ queryKey: ['expenses', 'month', monthPrefix] });
       })

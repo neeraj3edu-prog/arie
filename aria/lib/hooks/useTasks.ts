@@ -28,8 +28,13 @@ export function useTasks(date: string) {
   // Realtime push for native (web polls via invalidation after sync)
   useEffect(() => {
     if (Platform.OS === 'web') return;
+    // Remove stale channel before subscribing (guards against Strict Mode double-invoke)
+    const channelName = `tasks:${date}`;
+    supabase.getChannels()
+      .filter(c => c.topic === `realtime:${channelName}`)
+      .forEach(c => supabase.removeChannel(c));
     const channel = supabase
-      .channel(`tasks:${date}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'tasks', filter: `scheduled_date=eq.${date}` },
