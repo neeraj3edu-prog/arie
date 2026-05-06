@@ -1,8 +1,10 @@
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, Dimensions } from 'react-native';
 import { Tabs, router, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -19,7 +21,7 @@ function IconTabBar() {
     <View
       style={{
         flexDirection: 'row',
-        width: '100%',
+        width: SCREEN_WIDTH,
         backgroundColor: '#0a0a0f',
         borderTopWidth: 1,
         borderTopColor: 'rgba(255,255,255,0.08)',
