@@ -11,8 +11,15 @@ type CalendarState = {
 };
 
 export function useCalendar(): CalendarState {
-  const [selectedDate, setSelectedDate] = useState(localDateISO());
+  const [selectedDate, setSelectedDateRaw] = useState(localDateISO());
   const [activeMonth, setActiveMonth] = useState(localMonthISO());
+
+  // Auto-advance the visible month when the user taps an adjacent-month cell
+  const setSelectedDate = useCallback((date: string) => {
+    setSelectedDateRaw(date);
+    const newMonth = date.substring(0, 7);
+    setActiveMonth(newMonth);
+  }, []);
 
   const goToPrevMonth = useCallback(() => {
     setActiveMonth((prev) => {

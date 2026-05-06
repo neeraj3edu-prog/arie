@@ -4,7 +4,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { useTasks } from '@/lib/hooks/useTasks';
 import { useCalendar } from '@/lib/hooks/useCalendar';
-import { useExpensesForMonth } from '@/lib/hooks/useExpenses';
 import { MonthCalendar } from '@/components/calendar/MonthCalendar';
 import { TaskItem } from '@/components/tasks/TaskItem';
 import { AddTaskSheet } from '@/components/input/AddTaskSheet';
@@ -26,12 +25,10 @@ export default function TasksScreen() {
   const { selectedDate, activeMonth, setSelectedDate, goToPrevMonth, goToNextMonth, goToToday } = useCalendar();
   const { tasks, overdueTasks, loading, addTasks, toggleTask, removeTask, moveToToday } = useTasks(selectedDate);
   const [showOverdue, setShowOverdue] = useState(true);
-  const { data: monthExpenses = [] } = useExpensesForMonth(activeMonth);
   const [addSheetVisible, setAddSheetVisible] = useState(false);
   const [voiceSheetVisible, setVoiceSheetVisible] = useState(false);
 
   const datesWithTasks = new Set(tasks.map((t) => t.scheduledDate));
-  const datesWithExpenses = new Set(monthExpenses.map((e) => e.date));
 
   const [year, month] = activeMonth.split('-').map(Number);
   const monthLabel = `${MONTH_NAMES[month - 1]} ${year}`;
@@ -67,7 +64,7 @@ export default function TasksScreen() {
           activeMonth={activeMonth} selectedDate={selectedDate}
           onSelectDate={setSelectedDate} onPrevMonth={goToPrevMonth}
           onNextMonth={goToNextMonth} onToday={goToToday}
-          accentColor={ACCENT} datesWithTasks={datesWithTasks} datesWithExpenses={datesWithExpenses}
+          accentColor={ACCENT} datesWithTasks={datesWithTasks}
         />
 
         {/* Overdue tasks from previous days */}

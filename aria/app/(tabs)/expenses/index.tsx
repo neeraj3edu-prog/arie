@@ -4,7 +4,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { useCalendar } from '@/lib/hooks/useCalendar';
 import { useExpensesForMonth, useExpensesForDate } from '@/lib/hooks/useExpenses';
-import { useTasks } from '@/lib/hooks/useTasks';
 import { MonthCalendar } from '@/components/calendar/MonthCalendar';
 import { ExpenseItem } from '@/components/expenses/ExpenseItem';
 import { AddExpenseSheet } from '@/components/input/AddExpenseSheet';
@@ -30,14 +29,12 @@ export default function ExpensesScreen() {
   const { selectedDate, activeMonth, setSelectedDate, goToPrevMonth, goToNextMonth, goToToday } = useCalendar();
   const { data: monthExpenses = [] } = useExpensesForMonth(activeMonth);
   const { expenses: dayExpenses = [], loading: isLoading, addExpenses, removeExpense } = useExpensesForDate(selectedDate);
-  const { tasks } = useTasks(selectedDate);
   const [addSheetVisible, setAddSheetVisible] = useState(false);
   const [voiceSheetVisible, setVoiceSheetVisible] = useState(false);
   const [scanSheetVisible, setScanSheetVisible] = useState(false);
   const [dayView, setDayView] = useState<DayView>('day');
 
   const datesWithExpenses = new Set(monthExpenses.map((e) => e.date));
-  const datesWithTasks = new Set(tasks.map((t) => t.scheduledDate));
   const displayExpenses = dayView === 'day' ? dayExpenses : monthExpenses;
 
   const sectionLabel = isToday(selectedDate)
@@ -88,7 +85,7 @@ export default function ExpensesScreen() {
           activeMonth={activeMonth} selectedDate={selectedDate}
           onSelectDate={setSelectedDate} onPrevMonth={goToPrevMonth}
           onNextMonth={goToNextMonth} onToday={goToToday}
-          accentColor={ACCENT} datesWithTasks={datesWithTasks} datesWithExpenses={datesWithExpenses}
+          accentColor={ACCENT} datesWithExpenses={datesWithExpenses}
         />
 
         {/* Section header */}
