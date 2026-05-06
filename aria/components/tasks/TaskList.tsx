@@ -73,7 +73,6 @@ export function TaskList({ tasks, onToggle, onDelete }: TaskListProps) {
   return (
     <FlashList
       data={tasks}
-      estimatedItemSize={60}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => (
         <TaskItem

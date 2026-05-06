@@ -16,6 +16,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.neerajjoshi.planora",
+      "buildNumber": "1",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Planora uses your microphone to record voice tasks and expenses",
         "NSCameraUsageDescription": "Planora uses your camera to scan receipts",
