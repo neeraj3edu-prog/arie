@@ -1,7 +1,8 @@
-import { View, Text, Pressable, Platform } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { Tabs, router, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -12,16 +13,18 @@ const TAB_DEFS = [
 
 function IconTabBar() {
   const pathname = usePathname();
+  const insets = useSafeAreaInsets();
 
   return (
     <View
       style={{
         flexDirection: 'row',
+        width: '100%',
         backgroundColor: '#0a0a0f',
         borderTopWidth: 1,
         borderTopColor: 'rgba(255,255,255,0.08)',
-        paddingTop: 10,
-        paddingBottom: Platform.OS === 'ios' ? 28 : 14,
+        paddingTop: 12,
+        paddingBottom: Math.max(insets.bottom, 16),
       }}
     >
       {TAB_DEFS.map((tab) => {
@@ -34,7 +37,7 @@ function IconTabBar() {
               flex: 1,
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 3,
+              gap: 4,
               opacity: pressed ? 0.5 : 1,
             })}
             accessible
@@ -44,7 +47,7 @@ function IconTabBar() {
           >
             <Ionicons
               name={isFocused ? tab.activeIcon : tab.icon}
-              size={24}
+              size={26}
               color={isFocused ? tab.color : '#4a4a60'}
             />
             <Text style={{ fontSize: 11, fontWeight: '600', color: isFocused ? tab.color : '#4a4a60' }}>
