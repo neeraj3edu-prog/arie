@@ -1,4 +1,4 @@
-import { View, Text, Pressable, useWindowDimensions } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { Tabs, router, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
@@ -11,22 +11,27 @@ const TAB_DEFS = [
   { name: 'expenses', label: 'Expenses', icon: 'card-outline'     as IoniconName, activeIcon: 'card'     as IoniconName, color: '#f7a24f' },
 ] as const;
 
+// Fixed visible height of the tab bar (icon + gap + label + top padding)
+const TAB_CONTENT_HEIGHT = 56;
+
 function IconTabBar() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
-  const tabWidth = width / TAB_DEFS.length;
+  const bottomPad = Math.max(insets.bottom, 16);
 
   return (
     <View
       style={{
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
         flexDirection: 'row',
-        width,
         backgroundColor: '#0a0a0f',
         borderTopWidth: 1,
         borderTopColor: 'rgba(255,255,255,0.08)',
         paddingTop: 12,
-        paddingBottom: Math.max(insets.bottom, 16),
+        paddingBottom: bottomPad,
       }}
     >
       {TAB_DEFS.map((tab) => {
@@ -36,7 +41,7 @@ function IconTabBar() {
             key={tab.name}
             onPress={() => router.navigate(`/(tabs)/${tab.name}`)}
             style={({ pressed }) => ({
-              width: tabWidth,
+              flex: 1,
               alignItems: 'center',
               justifyContent: 'center',
               gap: 4,
@@ -64,6 +69,9 @@ function IconTabBar() {
 
 export default function TabLayout() {
   useFonts({ ...Ionicons.font });
+  const insets = useSafeAreaInsets();
+  // Total tab bar height = content + bottom safe area — screens need this as padding
+  const tabBarHeight = TAB_CONTENT_HEIGHT + Math.max(insets.bottom, 16);
 
   return (
     <View style={{ flex: 1, backgroundColor: '#0a0a0f' }}>
@@ -71,6 +79,8 @@ export default function TabLayout() {
         screenOptions={{
           headerShown: false,
           tabBarStyle: { display: 'none' },
+          // Push screen content up so it isn't hidden under the absolute tab bar
+          contentStyle: { paddingBottom: tabBarHeight },
         }}
       >
         <Tabs.Screen name="tasks"    options={{ title: 'Tasks' }} />
@@ -79,6 +89,7 @@ export default function TabLayout() {
         <Tabs.Screen name="two"      options={{ href: null }} />
       </Tabs>
 
+      {/* Absolutely positioned — left:0 right:0 guarantees full screen width */}
       <IconTabBar />
     </View>
   );
