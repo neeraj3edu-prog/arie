@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Planora",
+    "name": "Planora: Tasks & Expenses AI",
     "slug": "planora",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -18,9 +18,9 @@
       "bundleIdentifier": "com.neerajjoshi.planora",
       "buildNumber": "1",
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "Planora uses your microphone to record voice tasks and expenses",
-        "NSCameraUsageDescription": "Planora uses your camera to scan receipts",
-        "NSPhotoLibraryUsageDescription": "Planora accesses your photos to scan receipts",
+        "NSMicrophoneUsageDescription": "Planora: Tasks & Expenses AI uses your microphone to record voice tasks and expenses",
+        "NSCameraUsageDescription": "Planora: Tasks & Expenses AI uses your camera to scan receipts",
+        "NSPhotoLibraryUsageDescription": "Planora: Tasks & Expenses AI accesses your photos to scan receipts",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
