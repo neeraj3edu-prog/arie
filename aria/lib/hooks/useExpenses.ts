@@ -26,7 +26,11 @@ export function useExpensesForDate(date: string) {
   const addExpenses = useMutation({
     mutationFn: async (expenses: NewExpense[]) => {
       const now = new Date().toISOString();
-      const newExpenses = expenses.map((e) => ({ ...e, id: generateUUID(), createdAt: now }));
+      const validated = expenses
+        .filter((e) => e.item?.trim().length > 0 && e.amount >= 0 && e.amount <= 10_000_000)
+        .map((e) => ({ ...e, item: e.item.trim().slice(0, 500), store: e.store?.trim().slice(0, 200) ?? null }));
+      if (validated.length === 0) return [];
+      const newExpenses = validated.map((e) => ({ ...e, id: generateUUID(), createdAt: now }));
 
       // Write to local DB first (SQLite on native, localStorage on web)
       await insertExpensesBatch(newExpenses);

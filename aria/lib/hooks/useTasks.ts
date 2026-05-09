@@ -66,7 +66,9 @@ export function useTasks(date: string) {
   const addTasks = useMutation({
     mutationFn: async (texts: string[]) => {
       const now = new Date().toISOString();
-      const newTasks = texts.map((text) => ({
+      const sanitized = texts.map((t) => t.trim().slice(0, 1000)).filter((t) => t.length > 0);
+      if (sanitized.length === 0) return [];
+      const newTasks = sanitized.map((text) => ({
         id: generateUUID(),
         text,
         scheduledDate: date,

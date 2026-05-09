@@ -20,15 +20,16 @@
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://krumjfjmwdkndzvrbgiv.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_VFdIoSFG39ElVJ0j9KaLIQ_ztd5OABW",
-        "EXPO_PUBLIC_EAS_PROJECT_ID": "cc59e195-f849-4016-acb0-f9c1385a35e1"
+        "EXPO_PUBLIC_EAS_PROJECT_ID": "cc59e195-f849-4016-acb0-f9c1385a35e1",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       }
     }
   },
   "submit": {
     "production": {
       "ios": {
-        "appleId": "YOUR_APPLE_ID@email.com",
-        "ascAppId": "YOUR_APP_STORE_CONNECT_APP_ID"
+        "appleId": "neeraj3joshi@gmail.com",
+        "ascAppId": "6767821958"
       }
     }
   }

@@ -1,9 +1,19 @@
 // No external imports — plain Deno fetch for everything to avoid boot errors
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+const RATE_LIMIT = 50; // max scans per hour per user
 
-function cors() {
+const ALLOWED_ORIGINS = [
+  'https://krumjfjmwdkndzvrbgiv.supabase.co',
+  'planora://',
+  'http://localhost:8081',
+  'http://localhost:8082',
+];
+
+function cors(req?: Request) {
+  const origin = req?.headers.get('Origin') ?? '';
+  const allowed = ALLOWED_ORIGINS.some(o => origin.startsWith(o)) ? origin : ALLOWED_ORIGINS[0];
   return {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': allowed,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   };
@@ -23,6 +33,27 @@ async function getUserId(req: Request): Promise<string> {
   const user = await res.json() as { id?: string };
   if (!user.id) throw new Error('Unauthorized');
   return user.id;
+}
+
+async function checkRateLimit(userId: string): Promise<void> {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  const windowStart = new Date(Date.now() - 3_600_000).toISOString();
+
+  const countRes = await fetch(
+    `${supabaseUrl}/rest/v1/usage_events?select=id&user_id=eq.${userId}&event_type=eq.document_scan&created_at=gte.${windowStart}`,
+    { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+  );
+  if (!countRes.ok) return; // fail open — don't block if rate limit check fails
+
+  const rows = await countRes.json() as unknown[];
+  if (rows.length >= RATE_LIMIT) throw new Error('Rate limit exceeded');
+
+  await fetch(`${supabaseUrl}/rest/v1/usage_events`, {
+    method: 'POST',
+    headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+    body: JSON.stringify({ user_id: userId, event_type: 'document_scan' }),
+  });
 }
 
 async function getGoogleToken(clientEmail: string, privateKeyB64: string): Promise<string> {
@@ -73,16 +104,17 @@ async function getGoogleToken(clientEmail: string, privateKeyB64: string): Promi
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: cors() });
+    return new Response(null, { status: 204, headers: cors(req) });
   }
 
   try {
-    await getUserId(req);
+    const userId = await getUserId(req);
+    await checkRateLimit(userId);
 
     const fd = await req.formData();
     const image = fd.get('image') as File | null;
-    if (!image) return Response.json({ error: 'No image' }, { status: 400, headers: cors() });
-    if (image.size > MAX_IMAGE_BYTES) return Response.json({ error: 'Image too large' }, { status: 413, headers: cors() });
+    if (!image) return Response.json({ error: 'No image' }, { status: 400, headers: cors(req) });
+    if (image.size > MAX_IMAGE_BYTES) return Response.json({ error: 'Image too large' }, { status: 413, headers: cors(req) });
 
     const bytes = new Uint8Array(await image.arrayBuffer());
     // Chunked base64 — spread on large arrays exceeds call stack
@@ -116,8 +148,8 @@ Deno.serve(async (req: Request) => {
 
     if (!docRes.ok) {
       const txt = await docRes.text();
-      console.error('DocAI error:', txt);
-      return Response.json({ error: 'DocAI failed', detail: txt }, { status: 502, headers: cors() });
+      console.error('DocAI error status:', docRes.status); // log status only, not response body
+      return Response.json({ error: 'Receipt processing failed' }, { status: 502, headers: cors(req) });
     }
 
     type Entity = {
@@ -153,13 +185,13 @@ Deno.serve(async (req: Request) => {
       ? `${dateVal.year}-${String(dateVal.month).padStart(2, '0')}-${String(dateVal.day).padStart(2, '0')}`
       : undefined;
 
-    return Response.json({ storeName, receiptDate, lineItems }, { headers: cors() });
+    return Response.json({ storeName, receiptDate, lineItems }, { headers: cors(req) });
 
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    const stack = err instanceof Error ? err.stack : '';
-    console.error('[document-scan]', msg, stack);
-    const status = msg === 'Unauthorized' ? 401 : 500;
-    return Response.json({ error: msg, detail: stack }, { status, headers: cors() });
+    console.error('[document-scan] error:', msg); // no stack trace in logs
+    const status = msg === 'Unauthorized' ? 401 : msg === 'Rate limit exceeded' ? 429 : 500;
+    const clientMsg = status === 500 ? 'An unexpected error occurred' : msg;
+    return Response.json({ error: clientMsg }, { status, headers: cors(req) });
   }
 });
