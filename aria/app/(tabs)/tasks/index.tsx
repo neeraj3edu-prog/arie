@@ -1,4 +1,4 @@
-import { View, Text, Pressable, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
@@ -9,6 +9,7 @@ import { TaskItem } from '@/components/tasks/TaskItem';
 import { AddTaskSheet } from '@/components/input/AddTaskSheet';
 import { VoiceSheet } from '@/components/voice/VoiceSheet';
 import { isToday } from '@/lib/utils/date';
+import { useAuthStore } from '@/store/authStore';
 
 function formatSectionDate(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number);
@@ -29,9 +30,44 @@ export default function TasksScreen() {
   const fabBottom = 16;
   const { selectedDate, activeMonth, setSelectedDate, goToPrevMonth, goToNextMonth, goToToday } = useCalendar();
   const { tasks, overdueTasks, loading, addTasks, toggleTask, removeTask, moveToToday } = useTasks(selectedDate);
+  const { signOut, deleteAccount } = useAuthStore();
   const [showOverdue, setShowOverdue] = useState(true);
   const [addSheetVisible, setAddSheetVisible] = useState(false);
   const [voiceSheetVisible, setVoiceSheetVisible] = useState(false);
+
+  function handleAccountMenu() {
+    Alert.alert('Account', undefined, [
+      {
+        text: 'Sign Out',
+        onPress: () => signOut(),
+      },
+      {
+        text: 'Delete Account',
+        style: 'destructive',
+        onPress: () => {
+          Alert.alert(
+            'Delete Account',
+            'This will permanently delete your account and all your data. This cannot be undone.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Delete Permanently',
+                style: 'destructive',
+                onPress: async () => {
+                  try {
+                    await deleteAccount();
+                  } catch (e) {
+                    Alert.alert('Error', e instanceof Error ? e.message : 'Failed to delete account.');
+                  }
+                },
+              },
+            ]
+          );
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }
 
   const datesWithTasks = new Set(tasks.map((t) => t.scheduledDate));
 
@@ -55,11 +91,18 @@ export default function TasksScreen() {
             <Text style={{ color: '#f0f0f5', fontSize: 28, fontWeight: '700', lineHeight: 34 }}>Tasks</Text>
             <Text style={{ color: '#8a8aa0', fontSize: 13, marginTop: 2 }}>{monthLabel}</Text>
           </View>
-          <Pressable onPress={() => setAddSheetVisible(true)}
-            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#13131a', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center', marginTop: 4 }}
-            accessible accessibilityRole="button" accessibilityLabel="Add task">
-            <Ionicons name="add" size={22} color="#f0f0f5" />
-          </Pressable>
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+            <Pressable onPress={handleAccountMenu}
+              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#13131a', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}
+              accessible accessibilityRole="button" accessibilityLabel="Account settings">
+              <Ionicons name="person-outline" size={18} color="#8a8aa0" />
+            </Pressable>
+            <Pressable onPress={() => setAddSheetVisible(true)}
+              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#13131a', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}
+              accessible accessibilityRole="button" accessibilityLabel="Add task">
+              <Ionicons name="add" size={22} color="#f0f0f5" />
+            </Pressable>
+          </View>
         </View>
 
         {/* Calendar */}

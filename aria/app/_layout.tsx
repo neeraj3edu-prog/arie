@@ -7,12 +7,14 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/store/authStore';
 import { getDb } from '@/lib/db/client';
-import { setPendingOAuthUrl } from '@/lib/oauthUrl';
 import { useRegisterPushToken, useNotificationHandler } from '@/lib/hooks/useNotifications';
+
+// Required for expo-web-browser auth sessions to complete on iOS
+WebBrowser.maybeCompleteAuthSession();
 
 // Native only — SplashScreen is a no-op on web
 if (Platform.OS !== 'web') {
@@ -101,15 +103,6 @@ function AppShell() {
   useRegisterPushToken();
   useNotificationHandler();
 
-  useEffect(() => {
-    if (Platform.OS === 'web') return;
-    const capture = (url: string) => {
-      if (url.startsWith('planora://auth/callback')) setPendingOAuthUrl(url);
-    };
-    Linking.getInitialURL().then(url => { if (url) capture(url); });
-    const sub = Linking.addEventListener('url', ({ url }) => capture(url));
-    return () => sub.remove();
-  }, []);
 
   useEffect(() => {
     async function boot() {
