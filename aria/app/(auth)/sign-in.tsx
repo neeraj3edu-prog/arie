@@ -2,6 +2,7 @@ import { View, Text, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Crypto from 'expo-crypto';
 import { useAuthStore } from '@/store/authStore';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -24,14 +25,24 @@ export default function SignInScreen() {
   async function handleApple() {
     setLoading(true);
     try {
+      // Generate a cryptographically secure nonce to prevent replay attacks.
+      // Apple embeds the SHA-256 hash in the identity token; Supabase verifies
+      // by hashing the raw nonce we supply and comparing to the token claim.
+      const rawNonce = Crypto.randomUUID();
+      const hashedNonce = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        rawNonce,
+      );
+
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
           AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
+        nonce: hashedNonce,
       });
       // credential.identityToken is guaranteed non-null when signInAsync succeeds
-      await signInWithApple(credential.identityToken!); // eslint-disable-line @typescript-eslint/no-non-null-assertion
+      await signInWithApple(credential.identityToken!, rawNonce); // eslint-disable-line @typescript-eslint/no-non-null-assertion
       router.replace('/(tabs)/tasks');
     } catch (e: unknown) {
       const code = (e as { code?: string }).code;

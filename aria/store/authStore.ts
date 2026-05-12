@@ -9,7 +9,7 @@ type AuthStore = {
   session: Session | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
-  signInWithApple: (identityToken: string) => Promise<void>;
+  signInWithApple: (identityToken: string, nonce?: string) => Promise<void>;
   signOut: () => Promise<void>;
   initialize: () => Promise<() => void>;  // returns unsubscribe fn
 };
@@ -81,10 +81,11 @@ export const useAuthStore = create<AuthStore>((set) => ({
     if (data.url) await Linking.openURL(data.url);
   },
 
-  signInWithApple: async (identityToken: string) => {
+  signInWithApple: async (identityToken: string, nonce?: string) => {
     const { error } = await supabase.auth.signInWithIdToken({
       provider: 'apple',
       token: identityToken,
+      nonce,
     });
     if (error) throw error;
   },
