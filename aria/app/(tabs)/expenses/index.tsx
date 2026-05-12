@@ -10,6 +10,8 @@ import { AddExpenseSheet } from '@/components/input/AddExpenseSheet';
 import { VoiceSheet } from '@/components/voice/VoiceSheet';
 import { ScanSheet } from '@/components/scan/ScanSheet';
 import { isToday } from '@/lib/utils/date';
+import { useAIConsent } from '@/lib/hooks/useAIConsent';
+import { AIConsentSheet } from '@/components/consent/AIConsentSheet';
 
 function formatSectionDate(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number);
@@ -34,10 +36,34 @@ export default function ExpensesScreen() {
   const { selectedDate, activeMonth, setSelectedDate, goToPrevMonth, goToNextMonth, goToToday } = useCalendar();
   const { data: monthExpenses = [] } = useExpensesForMonth(activeMonth);
   const { expenses: dayExpenses = [], loading: isLoading, addExpenses, removeExpense } = useExpensesForDate(selectedDate);
+  const { hasConsent, grantConsent } = useAIConsent();
   const [addSheetVisible, setAddSheetVisible] = useState(false);
   const [voiceSheetVisible, setVoiceSheetVisible] = useState(false);
   const [scanSheetVisible, setScanSheetVisible] = useState(false);
+  const [consentSheetVisible, setConsentSheetVisible] = useState(false);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [dayView, setDayView] = useState<DayView>('day');
+
+  function requestAIFeature(action: () => void) {
+    if (hasConsent) {
+      action();
+    } else {
+      setPendingAction(() => action);
+      setConsentSheetVisible(true);
+    }
+  }
+
+  async function handleConsentAllow() {
+    await grantConsent();
+    setConsentSheetVisible(false);
+    pendingAction?.();
+    setPendingAction(null);
+  }
+
+  function handleConsentDecline() {
+    setConsentSheetVisible(false);
+    setPendingAction(null);
+  }
 
   const datesWithExpenses = new Set(monthExpenses.map((e) => e.date));
   const displayExpenses = dayView === 'day' ? dayExpenses : monthExpenses;
@@ -70,7 +96,7 @@ export default function ExpensesScreen() {
             <Text style={{ color: '#8a8aa0', fontSize: 13, marginTop: 2 }}>{monthLabel}</Text>
           </View>
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
-            <Pressable onPress={() => setScanSheetVisible(true)}
+            <Pressable onPress={() => requestAIFeature(() => setScanSheetVisible(true))}
               style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#13131a', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}
               accessible accessibilityRole="button" accessibilityLabel="Scan receipt">
               <Ionicons name="scan-outline" size={18} color="#f0f0f5" />
@@ -143,9 +169,15 @@ export default function ExpensesScreen() {
         )}
       </ScrollView>
 
+      <AIConsentSheet
+        visible={consentSheetVisible}
+        onAllow={handleConsentAllow}
+        onDecline={handleConsentDecline}
+      />
+
       {/* Mic FAB */}
       <Pressable
-        onPress={() => setVoiceSheetVisible(true)}
+        onPress={() => requestAIFeature(() => setVoiceSheetVisible(true))}
         style={{
           position: 'absolute', bottom: fabBottom,
           alignSelf: 'center', left: '50%', marginLeft: -32,

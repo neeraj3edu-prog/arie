@@ -10,6 +10,8 @@ import { AddTaskSheet } from '@/components/input/AddTaskSheet';
 import { VoiceSheet } from '@/components/voice/VoiceSheet';
 import { isToday } from '@/lib/utils/date';
 import { useAuthStore } from '@/store/authStore';
+import { useAIConsent } from '@/lib/hooks/useAIConsent';
+import { AIConsentSheet } from '@/components/consent/AIConsentSheet';
 
 function formatSectionDate(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number);
@@ -31,9 +33,34 @@ export default function TasksScreen() {
   const { selectedDate, activeMonth, setSelectedDate, goToPrevMonth, goToNextMonth, goToToday } = useCalendar();
   const { tasks, overdueTasks, loading, addTasks, toggleTask, removeTask, moveToToday } = useTasks(selectedDate);
   const { signOut, deleteAccount } = useAuthStore();
+  const { hasConsent, grantConsent } = useAIConsent();
   const [showOverdue, setShowOverdue] = useState(true);
   const [addSheetVisible, setAddSheetVisible] = useState(false);
   const [voiceSheetVisible, setVoiceSheetVisible] = useState(false);
+  const [consentSheetVisible, setConsentSheetVisible] = useState(false);
+  // Action to run after consent is granted (voice or scan)
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+
+  function requestAIFeature(action: () => void) {
+    if (hasConsent) {
+      action();
+    } else {
+      setPendingAction(() => action);
+      setConsentSheetVisible(true);
+    }
+  }
+
+  async function handleConsentAllow() {
+    await grantConsent();
+    setConsentSheetVisible(false);
+    pendingAction?.();
+    setPendingAction(null);
+  }
+
+  function handleConsentDecline() {
+    setConsentSheetVisible(false);
+    setPendingAction(null);
+  }
 
   function handleAccountMenu() {
     Alert.alert('Account', undefined, [
@@ -202,9 +229,15 @@ export default function TasksScreen() {
         )}
       </ScrollView>
 
+      <AIConsentSheet
+        visible={consentSheetVisible}
+        onAllow={handleConsentAllow}
+        onDecline={handleConsentDecline}
+      />
+
       {/* Mic FAB */}
       <Pressable
-        onPress={() => setVoiceSheetVisible(true)}
+        onPress={() => requestAIFeature(() => setVoiceSheetVisible(true))}
         style={{
           position: 'absolute', bottom: fabBottom,
           alignSelf: 'center', left: '50%', marginLeft: -32,
