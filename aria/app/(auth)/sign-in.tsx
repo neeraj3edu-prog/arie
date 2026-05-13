@@ -47,7 +47,9 @@ export default function SignInScreen() {
     } catch (e: unknown) {
       const code = (e as { code?: string }).code;
       if (code !== 'ERR_REQUEST_CANCELED') {
-        Alert.alert('Sign in failed', e instanceof Error ? e.message : 'Please try again.');
+        const msg = e instanceof Error ? e.message : String(e);
+        const detail = code ? `[${code}] ${msg}` : msg;
+        Alert.alert('Sign in with Apple failed', detail);
       }
     } finally {
       setLoading(false);
