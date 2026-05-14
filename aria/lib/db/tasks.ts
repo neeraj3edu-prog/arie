@@ -62,6 +62,15 @@ export async function insertTasksBatch(
   });
 }
 
+export async function getTaskById(id: string): Promise<Task | null> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<TaskRow>(
+    'SELECT * FROM tasks_local WHERE id = ?',
+    [id]
+  );
+  return row ? rowToTask(row) : null;
+}
+
 export async function toggleTask(id: string): Promise<void> {
   const db = await getDb();
   const now = new Date().toISOString();

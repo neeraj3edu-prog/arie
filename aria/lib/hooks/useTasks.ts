@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AppState, Platform } from 'react-native';
-import { getTasksForDate, insertTasksBatch, toggleTask, deleteTask, upsertTasksBatch, getOverdueTasksForDate, rescheduleTask } from '@/lib/db/tasks';
+import { getTasksForDate, getTaskById, insertTasksBatch, toggleTask, deleteTask, upsertTasksBatch, getOverdueTasksForDate, rescheduleTask } from '@/lib/db/tasks';
 import { addToSyncQueue } from '@/lib/sync/queue';
 import { triggerSync } from '@/lib/sync/syncEngine';
 import { supabase } from '@/lib/supabase/client';
@@ -110,9 +110,8 @@ export function useTasks(date: string) {
   const toggleTaskMutation = useMutation({
     mutationFn: async (id: string) => {
       await toggleTask(id);
-      // Re-read to get the new status for the sync payload
-      const tasks = await getTasksForDate(date);
-      const updated = tasks.find((t) => t.id === id);
+      // Use getTaskById so this works for both today's tasks and overdue tasks
+      const updated = await getTaskById(id);
       if (updated) {
         await addToSyncQueue([{
           tableName: 'tasks',
@@ -130,7 +129,9 @@ export function useTasks(date: string) {
       }
     },
     onSuccess: () => {
+      // Invalidate both today's list and the overdue list
       queryClient.invalidateQueries({ queryKey: ['tasks', date] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'overdue', date] });
       triggerSync();
     },
   });
