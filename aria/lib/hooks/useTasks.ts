@@ -129,9 +129,10 @@ export function useTasks(date: string) {
       }
     },
     onSuccess: () => {
-      // Invalidate both today's list and the overdue list
       queryClient.invalidateQueries({ queryKey: ['tasks', date] });
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'overdue', date] });
+      // Invalidate ALL overdue queries — toggling from May 6 must also
+      // refresh the overdue section on today's screen (different date key)
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'overdue'] });
       triggerSync();
     },
   });

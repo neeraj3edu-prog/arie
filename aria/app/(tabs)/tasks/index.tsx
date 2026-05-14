@@ -149,43 +149,51 @@ export default function TasksScreen() {
             >
               <Ionicons name="time-outline" size={14} color="#f7a24f" />
               <Text style={{ color: '#f7a24f', fontSize: 12, fontWeight: '700', letterSpacing: 0.5 }}>
-                {overdueTasks.length} OVERDUE FROM PREVIOUS DAYS
+                {overdueTasks.filter(t => t.status === 'pending').length} OVERDUE FROM PREVIOUS DAYS
               </Text>
               <Ionicons name={showOverdue ? 'chevron-up' : 'chevron-down'} size={14} color="#f7a24f" />
             </Pressable>
 
             {showOverdue && (
-              <View style={{ borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(247,162,79,0.2)', backgroundColor: 'rgba(247,162,79,0.04)' }}>
+              <View style={{ borderRadius: 16, borderWidth: 1, borderColor: 'rgba(247,162,79,0.2)', backgroundColor: 'rgba(247,162,79,0.04)' }}>
                 {overdueTasks.map((task, index) => {
-                  const [y, m, d] = task.scheduledDate.split('-').map(Number);
+                  const isDone = task.status === 'complete';
+                  const [, m, d] = task.scheduledDate.split('-').map(Number);
                   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
                   const dateLabel = `${MONTHS[m - 1]} ${d}`;
                   return (
                     <View key={task.id}>
-                      {index > 0 && <View style={{ height: 1, backgroundColor: 'rgba(247,162,79,0.15)' }} />}
+                      {index > 0 && <View style={{ height: 1, backgroundColor: 'rgba(247,162,79,0.15)', marginHorizontal: 14 }} />}
                       <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 11 }}>
                         <Pressable
                           onPress={() => toggleTask.mutate(task.id)}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                           style={{ marginRight: 10 }}
+                          accessible accessibilityRole="checkbox" accessibilityState={{ checked: isDone }}
                         >
-                          <Ionicons name="square-outline" size={22} color="#4a4a60" />
+                          <Ionicons
+                            name={isDone ? 'checkbox' : 'square-outline'}
+                            size={22}
+                            color={isDone ? '#34c759' : '#4a4a60'}
+                          />
                         </Pressable>
-                        <Text style={{ flex: 1, fontSize: 14, color: '#6a6a80', textDecorationLine: 'none' }} numberOfLines={1}>
+                        <Text style={{ flex: 1, fontSize: 14, color: isDone ? '#4a4a60' : '#6a6a80', textDecorationLine: isDone ? 'line-through' : 'none' }} numberOfLines={1}>
                           {task.text}
                         </Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                          <View style={{ backgroundColor: 'rgba(247,162,79,0.15)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
-                            <Text style={{ color: '#f7a24f', fontSize: 11, fontWeight: '600' }}>{dateLabel}</Text>
+                        {!isDone && (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <View style={{ backgroundColor: 'rgba(247,162,79,0.15)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                              <Text style={{ color: '#f7a24f', fontSize: 11, fontWeight: '600' }}>{dateLabel}</Text>
+                            </View>
+                            <Pressable
+                              onPress={() => moveToToday.mutate(task.id)}
+                              hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                              accessible accessibilityLabel="Move to today"
+                            >
+                              <Ionicons name="arrow-forward-circle-outline" size={20} color="#4f6ef7" />
+                            </Pressable>
                           </View>
-                          <Pressable
-                            onPress={() => moveToToday.mutate(task.id)}
-                            hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
-                            accessible accessibilityLabel="Move to today"
-                          >
-                            <Ionicons name="arrow-forward-circle-outline" size={20} color="#4f6ef7" />
-                          </Pressable>
-                        </View>
+                        )}
                       </View>
                     </View>
                   );
