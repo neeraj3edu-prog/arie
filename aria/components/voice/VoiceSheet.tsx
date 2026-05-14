@@ -1,5 +1,5 @@
 import { View, Text, Pressable, Alert } from 'react-native';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Sheet } from '@/components/ui/Sheet';
 import { Waveform } from './Waveform';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,12 +19,10 @@ type VoiceSheetProps = {
 
 const MODE_CONFIG = {
   tasks: {
-    label: 'Speak your tasks',
     hint: '"Pick up groceries, call dentist, finish report"',
     color: '#4f6ef7',
   },
   expenses: {
-    label: 'Speak your expenses',
     hint: '"Coffee $4.50 at Starbucks, taxi $12"',
     color: '#f7a24f',
   },
@@ -40,13 +38,13 @@ export function VoiceSheet({
   defaultCurrency = 'USD',
 }: VoiceSheetProps) {
   const cfg = MODE_CONFIG[mode];
+  const [lastTranscript, setLastTranscript] = useState('');
 
   async function handleTranscript(transcript: string) {
+    setLastTranscript(transcript);
     try {
       if (mode === 'tasks') {
-        if (__DEV__) console.log('[VoiceSheet] transcript:', transcript);
         const parsed = await parseTasks(transcript);
-        if (__DEV__) console.log('[VoiceSheet] parsed tasks:', parsed);
         if (parsed.length > 0) {
           onAddTasks(parsed.map((p) => p.text));
         } else {
@@ -69,132 +67,140 @@ export function VoiceSheet({
           Alert.alert('No expenses found', `We heard: "${transcript}"\nTry speaking more clearly.`);
         }
       }
+      reset();
+      setLastTranscript('');
       onClose();
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to process voice input';
-      const isNotDeployed = msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('404');
-      Alert.alert(
-        isNotDeployed ? 'Edge Function Not Deployed' : 'Error',
-        isNotDeployed
-          ? 'The voice transcription service isn\'t deployed yet.\n\nRun:\n  supabase functions deploy voice-transcribe\n  supabase functions deploy ai-parse'
-          : msg
-      );
+      Alert.alert('Error', msg);
     }
   }
 
   const { phase, error, start, stop, reset } = useVoiceRecorder(handleTranscript);
   const autoStarted = useRef(false);
 
-  // Auto-start recording as soon as the sheet is visible
+  // Auto-start once visible — 150ms lets the sheet animation finish first
   useEffect(() => {
     if (visible && phase === 'idle' && !autoStarted.current) {
       autoStarted.current = true;
-      start();
+      const t = setTimeout(() => start(), 150);
+      return () => clearTimeout(t);
     }
     if (!visible) {
       autoStarted.current = false;
     }
   }, [visible, phase, start]);
 
-  // Auto-close after success
+  // Auto-close after success (safety net — handleTranscript normally closes first)
   useEffect(() => {
     if (phase === 'success') {
-      const t = setTimeout(() => {
-        reset();
-        onClose();
-      }, 1200);
+      const t = setTimeout(() => { reset(); setLastTranscript(''); onClose(); }, 1200);
       return () => clearTimeout(t);
     }
   }, [phase, reset, onClose]);
 
   function handleClose() {
     reset();
+    setLastTranscript('');
     onClose();
   }
 
   const isRecording = phase === 'recording';
   const isProcessing = phase === 'processing';
+  const isStarting = phase === 'idle' || phase === 'requesting';
 
   return (
     <Sheet visible={visible} onClose={handleClose} snapHeight={380}>
-      <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 8, paddingBottom: 32 }}>
-        {/* Header */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: 20 }}>
-          <Text style={{ color: '#f0f0f5', fontSize: 18, fontWeight: '700' }}>{cfg.label}</Text>
+      <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 16, paddingBottom: 32 }}>
+
+        {/* Waveform — center */}
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <Waveform active={isRecording} color={cfg.color} />
+
+          {/* Transcript / status text — matches Notie's live transcript area */}
+          <View style={{ marginTop: 24, minHeight: 48, alignItems: 'center', paddingHorizontal: 8 }}>
+            {isStarting && (
+              <Text style={{ color: '#4a4a60', fontSize: 15, textAlign: 'center' }}>Starting…</Text>
+            )}
+            {isRecording && lastTranscript.length === 0 && (
+              <Text style={{ color: '#8a8aa0', fontSize: 15, textAlign: 'center' }}>{cfg.hint}</Text>
+            )}
+            {isRecording && lastTranscript.length > 0 && (
+              <Text style={{ color: '#f0f0f5', fontSize: 15, textAlign: 'center' }} numberOfLines={3}>
+                {lastTranscript}
+              </Text>
+            )}
+            {isProcessing && (
+              <>
+                <Text style={{ color: '#8a8aa0', fontSize: 13, textAlign: 'center', marginBottom: 6 }}>Analyzing…</Text>
+                {lastTranscript.length > 0 && (
+                  <Text style={{ color: '#4a4a60', fontSize: 13, textAlign: 'center' }} numberOfLines={3}>
+                    "{lastTranscript}"
+                  </Text>
+                )}
+              </>
+            )}
+            {phase === 'success' && (
+              <Text style={{ color: '#34c759', fontSize: 15, fontWeight: '600', textAlign: 'center' }}>Added!</Text>
+            )}
+            {phase === 'error' && (
+              <Text style={{ color: '#ff453a', fontSize: 14, textAlign: 'center' }} numberOfLines={3}>
+                {error ?? 'Something went wrong'}
+              </Text>
+            )}
+          </View>
+        </View>
+
+        {/* Bottom row: Cancel + action button — matches Notie layout */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 40 }}>
           <Pressable
             onPress={handleClose}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessible
-            accessibilityRole="button"
-            accessibilityLabel="Close voice recorder"
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            accessible accessibilityRole="button" accessibilityLabel="Cancel"
           >
-            <Ionicons name="close" size={22} color="#8a8aa0" />
+            <Text style={{ color: '#8a8aa0', fontSize: 16 }}>Cancel</Text>
           </Pressable>
-        </View>
 
-        {/* Center area — waveform + status */}
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <View style={{ marginBottom: 20 }}>
-            <Waveform active={isRecording} color={cfg.color} />
-          </View>
-
-          <Text style={{ color: '#8a8aa0', fontSize: 14, textAlign: 'center', marginBottom: 6 }}>
-            {(phase === 'idle' || phase === 'requesting') && 'Starting…'}
-            {phase === 'recording' && 'Listening… tap to stop'}
-            {phase === 'processing' && 'Processing…'}
-            {phase === 'success' && 'Added!'}
-            {phase === 'error' && (error ?? 'Something went wrong')}
-          </Text>
-
-          {phase === 'recording' && (
-            <Text style={{ color: '#4a4a60', fontSize: 12, textAlign: 'center' }} numberOfLines={2}>
-              {cfg.hint}
-            </Text>
-          )}
-        </View>
-
-        {/* Button pinned at bottom */}
-        <View style={{ alignItems: 'center' }}>
-          {/* Recording — show stop button */}
+          {/* Stop button while recording */}
           {isRecording && (
             <Pressable
               onPress={stop}
-              style={{ width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ff453a' }}
+              style={{ width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ff453a' }}
               accessible accessibilityRole="button" accessibilityLabel="Stop recording"
             >
-              <Ionicons name="stop" size={36} color="#fff" />
+              <Ionicons name="stop" size={32} color="#fff" />
             </Pressable>
           )}
 
-          {/* Starting / requesting — disabled mic */}
-          {(phase === 'idle' || phase === 'requesting') && (
-            <View style={{ width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: cfg.color + '66' }}>
-              <Ionicons name="mic" size={36} color="#fff" />
+          {/* Dimmed mic while starting */}
+          {isStarting && (
+            <View style={{ width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: cfg.color + '55' }}>
+              <Ionicons name="mic" size={32} color="#fff" />
             </View>
           )}
 
-          {/* Processing */}
+          {/* Hourglass while processing */}
           {isProcessing && (
-            <View style={{ width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: cfg.color + '33' }}>
-              <Ionicons name="hourglass-outline" size={32} color={cfg.color} />
+            <View style={{ width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: cfg.color + '33' }}>
+              <Ionicons name="hourglass-outline" size={28} color={cfg.color} />
             </View>
           )}
 
-          {/* Success */}
+          {/* Green check on success */}
           {phase === 'success' && (
-            <View style={{ width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: '#34c759' }}>
-              <Ionicons name="checkmark" size={36} color="#fff" />
+            <View style={{ width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: '#34c759' }}>
+              <Ionicons name="checkmark" size={32} color="#fff" />
             </View>
           )}
 
-          {/* Error — tap mic to retry */}
+          {/* Retry on error */}
           {phase === 'error' && (
             <Pressable
-              onPress={() => { reset(); start(); }}
-              style={{ width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: cfg.color }}
-              accessible accessibilityRole="button" accessibilityLabel="Retry recording"
+              onPress={() => { reset(); setLastTranscript(''); start(); }}
+              style={{ width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: cfg.color }}
+              accessible accessibilityRole="button" accessibilityLabel="Retry"
             >
-              <Ionicons name="mic" size={36} color="#fff" />
+              <Ionicons name="mic" size={32} color="#fff" />
             </Pressable>
           )}
         </View>
