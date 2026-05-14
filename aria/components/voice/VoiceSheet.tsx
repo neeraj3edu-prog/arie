@@ -1,4 +1,5 @@
 import { View, Text, Pressable, Alert } from 'react-native';
+import { useEffect, useRef } from 'react';
 import { Sheet } from '@/components/ui/Sheet';
 import { Waveform } from './Waveform';
 import { Ionicons } from '@expo/vector-icons';
@@ -82,6 +83,29 @@ export function VoiceSheet({
   }
 
   const { phase, error, start, stop, reset } = useVoiceRecorder(handleTranscript);
+  const autoStarted = useRef(false);
+
+  // Auto-start recording as soon as the sheet is visible
+  useEffect(() => {
+    if (visible && phase === 'idle' && !autoStarted.current) {
+      autoStarted.current = true;
+      start();
+    }
+    if (!visible) {
+      autoStarted.current = false;
+    }
+  }, [visible, phase, start]);
+
+  // Auto-close after success
+  useEffect(() => {
+    if (phase === 'success') {
+      const t = setTimeout(() => {
+        reset();
+        onClose();
+      }, 1200);
+      return () => clearTimeout(t);
+    }
+  }, [phase, reset, onClose]);
 
   function handleClose() {
     reset();
@@ -115,40 +139,63 @@ export function VoiceSheet({
           </View>
 
           <Text style={{ color: '#8a8aa0', fontSize: 14, textAlign: 'center', marginBottom: 6 }}>
-            {phase === 'idle' && 'Tap the mic to start'}
-            {phase === 'requesting' && 'Requesting microphone…'}
-            {phase === 'recording' && 'Listening…'}
+            {(phase === 'idle' || phase === 'requesting') && 'Starting…'}
+            {phase === 'recording' && 'Listening… tap to stop'}
             {phase === 'processing' && 'Processing…'}
-            {phase === 'success' && 'Done!'}
+            {phase === 'success' && 'Added!'}
             {phase === 'error' && (error ?? 'Something went wrong')}
           </Text>
 
-          {phase === 'idle' && (
+          {phase === 'recording' && (
             <Text style={{ color: '#4a4a60', fontSize: 12, textAlign: 'center' }} numberOfLines={2}>
               {cfg.hint}
             </Text>
           )}
         </View>
 
-        {/* Mic / Stop button pinned at bottom */}
+        {/* Button pinned at bottom */}
         <View style={{ alignItems: 'center' }}>
-          {!isProcessing && phase !== 'success' && (
+          {/* Recording — show stop button */}
+          {isRecording && (
             <Pressable
-              onPress={isRecording ? stop : start}
-              style={{ width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: isRecording ? '#ff453a' : cfg.color }}
-              accessible
-              accessibilityRole="button"
-              accessibilityLabel={isRecording ? 'Stop recording' : 'Start recording'}
-              accessibilityLiveRegion="assertive"
+              onPress={stop}
+              style={{ width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ff453a' }}
+              accessible accessibilityRole="button" accessibilityLabel="Stop recording"
             >
-              <Ionicons name={isRecording ? 'stop' : 'mic'} size={36} color="#fff" />
+              <Ionicons name="stop" size={36} color="#fff" />
             </Pressable>
           )}
 
+          {/* Starting / requesting — disabled mic */}
+          {(phase === 'idle' || phase === 'requesting') && (
+            <View style={{ width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: cfg.color + '66' }}>
+              <Ionicons name="mic" size={36} color="#fff" />
+            </View>
+          )}
+
+          {/* Processing */}
           {isProcessing && (
             <View style={{ width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: cfg.color + '33' }}>
               <Ionicons name="hourglass-outline" size={32} color={cfg.color} />
             </View>
+          )}
+
+          {/* Success */}
+          {phase === 'success' && (
+            <View style={{ width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: '#34c759' }}>
+              <Ionicons name="checkmark" size={36} color="#fff" />
+            </View>
+          )}
+
+          {/* Error — tap mic to retry */}
+          {phase === 'error' && (
+            <Pressable
+              onPress={() => { reset(); start(); }}
+              style={{ width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: cfg.color }}
+              accessible accessibilityRole="button" accessibilityLabel="Retry recording"
+            >
+              <Ionicons name="mic" size={36} color="#fff" />
+            </Pressable>
           )}
         </View>
       </View>
