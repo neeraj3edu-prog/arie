@@ -11,6 +11,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/store/authStore';
 import { getDb } from '@/lib/db/client';
+import { bootstrapFromSupabase } from '@/lib/sync/bootstrapSync';
 import { useRegisterPushToken, useNotificationHandler } from '@/lib/hooks/useNotifications';
 
 // Required for expo-web-browser auth sessions to complete on iOS
@@ -109,7 +110,9 @@ function AppShell() {
       if (Platform.OS !== 'web') await getDb();
       const unsub = await initialize();
       unsubRef.current = unsub ?? null;
+      // Seed local DB from Supabase if this is a fresh install / reinstall
       if (Platform.OS !== 'web') {
+        bootstrapFromSupabase().catch(() => {});
         SplashScreen.hideAsync().catch(() => {});
       }
     }
