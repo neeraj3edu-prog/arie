@@ -25,26 +25,45 @@ export function useVoiceRecorder(
     setPhase('requesting');
     setError(undefined);
 
-    const { status } = await Audio.requestPermissionsAsync();
-    if (status !== 'granted') {
-      setError('Microphone permission denied');
+    try {
+      // Check existing status first so we know if this is a first-time grant
+      const { status: existingStatus } = await Audio.getPermissionsAsync();
+      const isFirstGrant = existingStatus !== 'granted';
+
+      const { status } = isFirstGrant
+        ? await Audio.requestPermissionsAsync()
+        : { status: existingStatus };
+
+      if (status !== 'granted') {
+        setError('Microphone permission denied');
+        setPhase('error');
+        return;
+      }
+
+      // iOS briefly interrupts the audio session after the first permission grant;
+      // a short delay lets it settle before we configure recording.
+      if (isFirstGrant) {
+        await new Promise<void>((resolve) => setTimeout(resolve, 350));
+      }
+
+      // Reset audio session first — clears stale background state (e.g. after returning from Safari OAuth)
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      recordingRef.current = recording;
+      startTimeRef.current = Date.now();
+      setPhase('recording');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to start recording';
+      setError(msg);
       setPhase('error');
-      return;
     }
-
-    // Reset audio session first — clears stale background state (e.g. after returning from Safari OAuth)
-    await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: true,
-      playsInSilentModeIOS: true,
-    });
-
-    const { recording } = await Audio.Recording.createAsync(
-      Audio.RecordingOptionsPresets.HIGH_QUALITY
-    );
-    recordingRef.current = recording;
-    startTimeRef.current = Date.now();
-    setPhase('recording');
   }, []);
 
   const stop = useCallback(async () => {
