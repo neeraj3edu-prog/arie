@@ -1,7 +1,21 @@
 import { Audio } from 'expo-av';
 import { useRef, useState, useCallback } from 'react';
+import { AppState } from 'react-native';
 import { transcribeAudio } from '../api/transcribe';
 import type { VoicePhase } from '../types';
+
+// expo-av rejects createAsync if AppState isn't 'active'. After the iOS permission
+// dialog the app briefly goes inactive, so we wait until it returns before proceeding.
+function waitForActive(timeoutMs = 3000): Promise<void> {
+  return new Promise((resolve) => {
+    if (AppState.currentState === 'active') { resolve(); return; }
+    let done = false;
+    const timer = setTimeout(() => { if (!done) { done = true; sub.remove(); resolve(); } }, timeoutMs);
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && !done) { done = true; clearTimeout(timer); sub.remove(); resolve(); }
+    });
+  });
+}
 
 type UseVoiceRecorderResult = {
   phase: VoicePhase;
@@ -40,10 +54,12 @@ export function useVoiceRecorder(
         return;
       }
 
-      // iOS briefly interrupts the audio session after the first permission grant;
-      // a short delay lets it settle before we configure recording.
+      // The permission dialog (and sometimes the sheet animation) briefly backgrounds
+      // the app — expo-av rejects createAsync unless AppState is 'active'.
+      await waitForActive();
+      // Extra settle time after first-time grant so iOS can fully reinitialize the audio session.
       if (isFirstGrant) {
-        await new Promise<void>((resolve) => setTimeout(resolve, 350));
+        await new Promise<void>((resolve) => setTimeout(resolve, 200));
       }
 
       // Reset audio session first — clears stale background state (e.g. after returning from Safari OAuth)
