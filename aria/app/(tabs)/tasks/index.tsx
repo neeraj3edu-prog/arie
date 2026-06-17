@@ -149,7 +149,7 @@ export default function TasksScreen() {
             >
               <Ionicons name="time-outline" size={14} color="#f7a24f" />
               <Text style={{ color: '#f7a24f', fontSize: 12, fontWeight: '700', letterSpacing: 0.5 }}>
-                {overdueTasks.filter(t => t.status === 'pending').length} OVERDUE FROM PREVIOUS DAYS
+                {overdueTasks.length} OVERDUE FROM PREVIOUS DAYS
               </Text>
               <Ionicons name={showOverdue ? 'chevron-up' : 'chevron-down'} size={14} color="#f7a24f" />
             </Pressable>

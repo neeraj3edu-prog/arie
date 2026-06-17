@@ -122,10 +122,9 @@ export async function upsertTasksBatch(
 
 export async function getOverdueTasksForDate(date: string): Promise<import('../types').Task[]> {
   const db = await getDb();
-  // Return both pending and complete overdue tasks so completed ones show
-  // with strikethrough rather than disappearing immediately
+  // Only return pending overdue tasks — completed ones are visible when navigating to their original date
   const rows = await db.getAllAsync<TaskRow>(
-    'SELECT * FROM tasks_local WHERE scheduled_date < ? ORDER BY status ASC, scheduled_date ASC, created_at ASC',
+    "SELECT * FROM tasks_local WHERE scheduled_date < ? AND status = 'pending' ORDER BY scheduled_date ASC, created_at ASC",
     [date]
   );
   return rows.map(rowToTask);
