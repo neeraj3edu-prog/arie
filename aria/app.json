@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.neerajjoshi.planora",
-      "buildNumber": "8",
+      "buildNumber": "9",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Planora records your voice so you can add tasks and expenses hands-free. For example, say \"Buy groceries $50 at Costco\" and Planora creates the expense automatically. Your recording is transcribed by Deepgram and parsed by Anthropic Claude — it is not stored after processing.",
         "NSCameraUsageDescription": "Planora uses your camera to photograph store receipts. For example, take a photo of a grocery receipt and Planora automatically extracts the store name, date, and each item with its price. The image is sent to Google Document AI for processing and is not stored afterward.",
