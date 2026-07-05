@@ -20,35 +20,49 @@ Deno.serve(async (req: Request) => {
     if (!audio) return Response.json({ error: 'No audio provided' }, { status: 400, headers: corsHeaders() });
     if (audio.size > MAX_AUDIO_BYTES) return Response.json({ error: 'Audio too large' }, { status: 413, headers: corsHeaders() });
 
-    const dgResponse = await fetch(
-      'https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&language=en',
-      {
+    const openAiForm = new FormData();
+    openAiForm.append('file', audio, audio.name || 'recording.m4a');
+    openAiForm.append('model', 'gpt-4o-transcribe');
+    // No language hint — auto-detect supports 99 languages including code-switching
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 30_000);
+
+    let oaiResponse: Response;
+    try {
+      oaiResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
         method: 'POST',
         headers: {
-          Authorization: `Token ${Deno.env.get('DEEPGRAM_API_KEY')}`,
-          // Accept webm from web browsers and m4a from native; Deepgram auto-detects
-          'Content-Type': audio.type || 'audio/webm',
+          Authorization: `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
         },
-        body: await audio.arrayBuffer(),
-      }
-    );
+        body: openAiForm,
+        signal: controller.signal,
+      });
+    } catch (err) {
+      const isTimeout = err instanceof Error && err.name === 'AbortError';
+      return Response.json(
+        { error: isTimeout ? 'Transcription timed out — try a shorter recording' : 'Transcription failed' },
+        { status: 504, headers: corsHeaders() }
+      );
+    } finally {
+      clearTimeout(timer);
+    }
 
-    if (!dgResponse.ok) {
-      console.error('Deepgram error:', await dgResponse.text());
+    if (!oaiResponse.ok) {
+      console.error('OpenAI transcription error:', oaiResponse.status, await oaiResponse.text());
       return Response.json({ error: 'Transcription failed' }, { status: 502, headers: corsHeaders() });
     }
 
-    const dgData = await dgResponse.json();
-    const transcript = dgData.results?.channels?.[0]?.alternatives?.[0]?.transcript ?? '';
-    const duration_ms = Math.round((dgData.metadata?.duration ?? 0) * 1000);
+    const oaiData = await oaiResponse.json();
+    const transcript = oaiData.text ?? '';
 
     supabase.from('usage_events').insert({
       user_id: user.id,
       event: 'voice_transcribe',
-      metadata: { duration_ms, bytes: audio.size },
+      metadata: { bytes: audio.size },
     }).then(() => {});
 
-    return Response.json({ transcript, duration_ms }, { headers: corsHeaders() });
+    return Response.json({ transcript }, { headers: corsHeaders() });
 
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown error';
