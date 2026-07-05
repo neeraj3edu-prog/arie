@@ -22,6 +22,7 @@ Deno.serve(async (req: Request) => {
 
     const openAiForm = new FormData();
     openAiForm.append('file', audio, audio.name || 'recording.m4a');
+    // gpt-4o-transcribe for best accuracy; falls back to whisper-1 if unavailable on your tier
     openAiForm.append('model', 'gpt-4o-transcribe');
     // No language hint — auto-detect supports 99 languages including code-switching
 
@@ -49,7 +50,26 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!oaiResponse.ok) {
-      console.error('OpenAI transcription error:', oaiResponse.status, await oaiResponse.text());
+      const errText = await oaiResponse.text();
+      console.error('OpenAI transcription error:', oaiResponse.status, errText);
+
+      // gpt-4o-transcribe may not be available on all tiers — retry with whisper-1
+      if (oaiResponse.status === 404 || oaiResponse.status === 400) {
+        const fallbackForm = new FormData();
+        fallbackForm.append('file', audio, audio.name || 'recording.m4a');
+        fallbackForm.append('model', 'whisper-1');
+        const fallbackRes = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${Deno.env.get('OPENAI_API_KEY')}` },
+          body: fallbackForm,
+        });
+        if (fallbackRes.ok) {
+          const fallbackData = await fallbackRes.json();
+          return Response.json({ transcript: fallbackData.text ?? '' }, { headers: corsHeaders() });
+        }
+        console.error('whisper-1 fallback also failed:', await fallbackRes.text());
+      }
+
       return Response.json({ error: 'Transcription failed' }, { status: 502, headers: corsHeaders() });
     }
 
