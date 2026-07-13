@@ -5,6 +5,8 @@ export default function TabLayout() {
     <Tabs screenOptions={{ headerShown: false, tabBarStyle: { display: 'none' } }}>
       <Tabs.Screen name="tasks/index"    options={{ title: 'Tasks' }} />
       <Tabs.Screen name="expenses/index" options={{ title: 'Expenses' }} />
+      <Tabs.Screen name="plans/index"    options={{ title: 'Plans' }} />
+      <Tabs.Screen name="plans/[id]"     options={{ title: 'List' }} />
       <Tabs.Screen name="index"          options={{ href: null }} />
       <Tabs.Screen name="two"            options={{ href: null }} />
     </Tabs>

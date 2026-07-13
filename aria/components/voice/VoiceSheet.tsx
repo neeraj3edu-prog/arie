@@ -4,8 +4,9 @@ import { Sheet } from '@/components/ui/Sheet';
 import { Waveform } from './Waveform';
 import { Ionicons } from '@expo/vector-icons';
 import { useVoiceRecorder } from '@/lib/hooks/useVoiceRecorder';
-import { parseTasks, parseExpenses } from '@/lib/api/parse';
-import type { VoiceMode, ParsedExpense, NewExpense } from '@/lib/types';
+import { parseTasks, parseExpenses, parsePlans } from '@/lib/api/parse';
+import { localDateISO } from '@/lib/utils/date';
+import type { VoiceMode, ParsedExpense, ParsedPlan, NewExpense } from '@/lib/types';
 
 type VoiceSheetProps = {
   visible: boolean;
@@ -13,6 +14,7 @@ type VoiceSheetProps = {
   onClose: () => void;
   onAddTasks: (texts: string[]) => void;
   onAddExpenses: (expenses: NewExpense[]) => void;
+  onAddPlans?: (plans: ParsedPlan[]) => void;
   defaultDate: string;
   defaultCurrency?: string;
 };
@@ -26,6 +28,10 @@ const MODE_CONFIG = {
     hint: '"Coffee $4.50 at Starbucks, taxi $12"',
     color: '#f7a24f',
   },
+  plans: {
+    hint: '"Remind me about Jake\'s birthday on June 20th"',
+    color: '#a78bfa',
+  },
 } as const;
 
 export function VoiceSheet({
@@ -34,6 +40,7 @@ export function VoiceSheet({
   onClose,
   onAddTasks,
   onAddExpenses,
+  onAddPlans,
   defaultDate,
   defaultCurrency = 'USD',
 }: VoiceSheetProps) {
@@ -50,7 +57,7 @@ export function VoiceSheet({
         } else {
           Alert.alert('No tasks found', `We heard: "${transcript}"\nTry speaking more clearly.`);
         }
-      } else {
+      } else if (mode === 'expenses') {
         const parsed = await parseExpenses(transcript);
         if (parsed.length > 0) {
           const expenses: NewExpense[] = parsed.map((p: ParsedExpense) => ({
@@ -65,6 +72,14 @@ export function VoiceSheet({
           onAddExpenses(expenses);
         } else {
           Alert.alert('No expenses found', `We heard: "${transcript}"\nTry speaking more clearly.`);
+        }
+      } else {
+        const today = localDateISO();
+        const parsed = await parsePlans(transcript, today);
+        if (parsed.length > 0 && onAddPlans) {
+          onAddPlans(parsed);
+        } else {
+          Alert.alert('No plan found', `We heard: "${transcript}"\nTry saying something like "Remind me about Jake's birthday on June 20th".`);
         }
       }
       reset();

@@ -17,6 +17,7 @@ type VoiceButtonProps = {
 const MODE_COLOR: Record<VoiceMode, string> = {
   tasks: '#4f6ef7',
   expenses: '#f7a24f',
+  plans: '#a78bfa',
 };
 
 export function VoiceButton({ onPress, mode }: VoiceButtonProps) {

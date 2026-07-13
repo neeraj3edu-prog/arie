@@ -2,7 +2,7 @@ import { getDb } from '../db/client';
 import type { SyncAction, SyncQueueItem } from '../types';
 
 type QueueEntry = {
-  tableName: 'tasks' | 'expenses';
+  tableName: 'tasks' | 'expenses' | 'plans' | 'list_items';
   recordId: string;
   action: SyncAction;
   payload: object;

@@ -30,8 +30,9 @@ const queryClient = new QueryClient({
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 const TAB_DEFS = [
-  { name: 'tasks',    label: 'Tasks',    icon: 'calendar-outline' as IoniconName, activeIcon: 'calendar' as IoniconName, color: '#4f6ef7' },
-  { name: 'expenses', label: 'Expenses', icon: 'card-outline'     as IoniconName, activeIcon: 'card'     as IoniconName, color: '#f7a24f' },
+  { name: 'tasks',    label: 'Tasks',    icon: 'calendar-outline'        as IoniconName, activeIcon: 'calendar'        as IoniconName, color: '#4f6ef7' },
+  { name: 'expenses', label: 'Expenses', icon: 'card-outline'            as IoniconName, activeIcon: 'card'            as IoniconName, color: '#f7a24f' },
+  { name: 'plans',    label: 'Plans',    icon: 'calendar-number-outline' as IoniconName, activeIcon: 'calendar-number' as IoniconName, color: '#a78bfa' },
 ] as const;
 
 function RootTabBar() {
@@ -57,7 +58,7 @@ function RootTabBar() {
         return (
           <View key={tab.name} style={{ width: tabW, alignItems: 'center', justifyContent: 'center', gap: 4 }}>
             <Pressable
-              onPress={() => expoRouter.navigate(`/(tabs)/${tab.name}`)}
+              onPress={() => expoRouter.navigate(`/(tabs)/${tab.name}` as Parameters<typeof expoRouter.navigate>[0])}
               style={{ alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 4 }}
               accessible
               accessibilityRole="tab"

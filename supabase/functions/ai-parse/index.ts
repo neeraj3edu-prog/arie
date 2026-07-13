@@ -35,6 +35,29 @@ Category options: groceries | dining | transport | shopping | health | entertain
 
 Output: { "expenses": [{ "item": "Whole Milk 1gal", "amount": 349, "category": "groceries" }] }`;
 
+const PLANS_SYSTEM = `You extract a plan (event or smart list) from a voice transcript.
+Return ONLY valid JSON with no markdown. Use today's date (provided in the prompt) to resolve relative dates.
+
+Plan types:
+- type: "event" — a specific date/time occurrence (birthday, appointment, class, etc.)
+- type: "list"  — a reusable checklist (grocery, pharmacy, school supplies, etc.)
+
+subtype options (for events): birthday | appointment | class | other
+recurrence options: none | daily | weekly | monthly | yearly
+notifyOffset options: day_before | morning_of | 1_hour_before | none
+
+Rules:
+- Dates → YYYY-MM-DD format. Resolve relative ("Saturday", "next Monday", "tomorrow") using today.
+- Times → HH:MM (24h). If no specific time, use null.
+- Birthdays/anniversaries → recurrence: "yearly", notifyOffset: "day_before" by default.
+- Weekly classes → recurrence: "weekly", notifyOffset: "morning_of" by default.
+- Appointments → recurrence: "none", notifyOffset: "1_hour_before" by default.
+- Lists → extract item names into listItems array. notifyOffset: "morning_of" if a reminder day is mentioned, else "none".
+- If no explicit notification preference, infer a sensible default based on type.
+- listItems: always present (empty array [] for events).
+
+Output: { "plan": { "type": "event", "subtype": "birthday", "title": "Jake's Birthday", "date": "2026-06-20", "time": null, "recurrence": "yearly", "notifyOffset": "day_before", "listItems": [] } }`;
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: corsHeaders() });
@@ -47,10 +70,10 @@ Deno.serve(async (req: Request) => {
       return Response.json({ error: 'Rate limit exceeded' }, { status: 429, headers: corsHeaders() });
     }
 
-    const body = await req.json() as { mode?: string; transcript?: string; lineItems?: unknown[] };
-    const { mode, transcript, lineItems } = body;
+    const body = await req.json() as { mode?: string; transcript?: string; lineItems?: unknown[]; today?: string };
+    const { mode, transcript, lineItems, today } = body;
 
-    if (!['tasks', 'expenses', 'scan'].includes(mode ?? '')) {
+    if (!['tasks', 'expenses', 'scan', 'plans'].includes(mode ?? '')) {
       return Response.json({ error: 'Invalid mode' }, { status: 400, headers: corsHeaders() });
     }
 
@@ -63,6 +86,9 @@ Deno.serve(async (req: Request) => {
     } else if (mode === 'expenses') {
       systemPrompt = EXPENSE_SYSTEM;
       userContent = `Extract expenses from: "${(transcript ?? '').slice(0, 3000)}"`;
+    } else if (mode === 'plans') {
+      systemPrompt = PLANS_SYSTEM;
+      userContent = `Today is ${today ?? new Date().toISOString().slice(0, 10)}. Extract a plan from: "${(transcript ?? '').slice(0, 3000)}"`;
     } else {
       systemPrompt = SCAN_SYSTEM;
       userContent = `Categorize these receipt items: ${JSON.stringify(lineItems ?? [])}`;

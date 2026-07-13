@@ -42,8 +42,35 @@ export const CREATE_TABLES = `
     value          TEXT NOT NULL
   );
 
-  CREATE INDEX IF NOT EXISTS idx_tasks_date    ON tasks_local(scheduled_date);
-  CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses_local(date);
-  CREATE INDEX IF NOT EXISTS idx_sync_pending  ON sync_queue(created_at)
+  CREATE TABLE IF NOT EXISTS plans_local (
+    id              TEXT PRIMARY KEY,
+    server_id       TEXT,
+    type            TEXT NOT NULL,
+    subtype         TEXT NOT NULL DEFAULT 'other',
+    title           TEXT NOT NULL,
+    date            TEXT,
+    time            TEXT,
+    recurrence      TEXT NOT NULL DEFAULT 'none',
+    notify_offset   TEXT NOT NULL DEFAULT 'none',
+    notification_id TEXT,
+    notes           TEXT,
+    created_at      TEXT NOT NULL,
+    synced          INTEGER NOT NULL DEFAULT 0
+  );
+
+  CREATE TABLE IF NOT EXISTS list_items_local (
+    id          TEXT PRIMARY KEY,
+    plan_id     TEXT NOT NULL,
+    text        TEXT NOT NULL,
+    done        INTEGER NOT NULL DEFAULT 0,
+    sort_order  INTEGER NOT NULL DEFAULT 0,
+    synced      INTEGER NOT NULL DEFAULT 0
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_tasks_date      ON tasks_local(scheduled_date);
+  CREATE INDEX IF NOT EXISTS idx_expenses_date   ON expenses_local(date);
+  CREATE INDEX IF NOT EXISTS idx_plans_date      ON plans_local(date);
+  CREATE INDEX IF NOT EXISTS idx_list_items_plan ON list_items_local(plan_id);
+  CREATE INDEX IF NOT EXISTS idx_sync_pending    ON sync_queue(created_at)
     WHERE retry_count < 5;
 `;

@@ -12,7 +12,7 @@ export type ExpenseCategory =
   | 'utilities'
   | 'other';
 
-export type VoiceMode = 'tasks' | 'expenses';
+export type VoiceMode = 'tasks' | 'expenses' | 'plans';
 
 export type VoicePhase =
   | 'idle'
@@ -76,12 +76,59 @@ export type ParsedExpense = {
 
 export type SyncQueueItem = {
   id: number;
-  tableName: 'tasks' | 'expenses';
+  tableName: 'tasks' | 'expenses' | 'plans' | 'list_items';
   recordId: string;
   action: SyncAction;
   payload: string; // JSON
   createdAt: string;
   retryCount: number;
+};
+
+// ── Plans ────────────────────────────────────────────────────────────────────
+
+export type PlanType = 'event' | 'list';
+export type PlanSubtype = 'birthday' | 'appointment' | 'class' | 'other';
+export type PlanRecurrence = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
+export type PlanNotifyOffset = 'day_before' | 'morning_of' | '1_hour_before' | 'none';
+
+export type Plan = {
+  id: string;
+  serverId: string | null;
+  type: PlanType;
+  subtype: PlanSubtype;
+  title: string;
+  date: string | null;          // YYYY-MM-DD
+  time: string | null;          // HH:MM
+  recurrence: PlanRecurrence;
+  notifyOffset: PlanNotifyOffset;
+  notificationId: string | null;
+  notes: string | null;
+  createdAt: string;
+  synced: boolean;
+};
+
+export type NewPlan = Pick<Plan, 'type' | 'subtype' | 'title' | 'date' | 'time' | 'recurrence' | 'notifyOffset' | 'notes'>;
+
+export type ListItem = {
+  id: string;
+  planId: string;
+  text: string;
+  done: boolean;
+  sortOrder: number;
+  synced: boolean;
+};
+
+export type NewListItem = Pick<ListItem, 'planId' | 'text' | 'sortOrder'>;
+
+export type ParsedPlan = {
+  type: PlanType;
+  subtype: PlanSubtype;
+  title: string;
+  date: string | null;
+  time: string | null;
+  recurrence: PlanRecurrence;
+  notifyOffset: PlanNotifyOffset;
+  listItems: string[];
 };
 
 // ── Auth ─────────────────────────────────────────────────────────────────────

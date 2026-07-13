@@ -1,4 +1,4 @@
-import type { ParsedExpense, ParsedTask } from '../types';
+import type { ParsedExpense, ParsedPlan, ParsedTask } from '../types';
 import { apiPost } from './client';
 
 export async function parseTasks(transcript: string): Promise<ParsedTask[]> {
@@ -11,6 +11,12 @@ export async function parseExpenses(transcript: string): Promise<ParsedExpense[]
   const res = await apiPost('ai-parse', { mode: 'expenses', transcript });
   const { expenses } = await res.json() as { expenses: ParsedExpense[] };
   return expenses ?? [];
+}
+
+export async function parsePlans(transcript: string, todayISO: string): Promise<ParsedPlan[]> {
+  const res = await apiPost('ai-parse', { mode: 'plans', transcript, today: todayISO });
+  const { plan } = await res.json() as { plan?: ParsedPlan };
+  return plan ? [plan] : [];
 }
 
 export async function parseScannedItems(
